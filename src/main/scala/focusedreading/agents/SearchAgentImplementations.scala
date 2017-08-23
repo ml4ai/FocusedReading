@@ -89,7 +89,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   val usedEndpointActions = usedActions filter {
-    case _:ExploreEndpoints => true
+    case _:ExploreEndpoints => false
     case _:ExploitEndpoints => true
     case _ => false
   }

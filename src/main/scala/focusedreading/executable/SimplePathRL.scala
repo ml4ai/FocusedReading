@@ -13,6 +13,7 @@ import org.json4s.native.JsonMethods.{pretty, render}
 import scala.collection.mutable
 import com.typesafe.scalalogging.LazyLogging
 import org.sarsamora.actions.Action
+import org.clulab.reach.focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
 import org.sarsamora.policies._
 
 /**
@@ -64,6 +65,8 @@ object SimplePathRL extends App with LazyLogging{
     }
   }
 
+  val valueLoader = new FocusedReadingActionValues
+
   val times = new mutable.ArrayBuffer[Long]
   val papers = new mutable.ArrayBuffer[String]
   var numQueries = 0
@@ -84,7 +87,7 @@ object SimplePathRL extends App with LazyLogging{
     logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
-    val policy = Policy.loadPolicy("learnt_policy.json").asInstanceOf[EpGreedyPolicy].makeGreedy
+    val policy = Policy.loadPolicy("learnt_policy.json", valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
     val agent = new PolicySearchAgent(participantA, participantB, policy)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
