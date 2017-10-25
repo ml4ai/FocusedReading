@@ -1,6 +1,7 @@
 package org.clulab.reach.focusedreading.executable
 
 import java.io.{BufferedWriter, File, FileOutputStream, FileWriter}
+import java.io._
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -52,17 +53,21 @@ object SimplePathRL extends App with LazyLogging{
     * Prints the sentences that back the evidence found
     * @param path
     */
-  def printEvidence(path: Seq[Connection], agent:SearchAgent) = {
+  def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter) = {
     val evidence:Seq[Iterable[String]] = path map agent.getEvidence
 
+    writer.write(s"${path.map(_.toString).mkString(" - ")}\n")
+
     for((c, e) <- path zip evidence){
-      logger.info("")
-      logger.info(s"Evidence for connection $c")
-      logger.info("")
+      writer.write("")
+      writer.write(s"Evidence for connection $c")
+      writer.write("")
       for(s <- e){
-        logger.info(s)
+        writer.write(s)
       }
     }
+
+    writer.write("\n==========\n")
   }
 
   val valueLoader = new FocusedReadingActionValues
@@ -74,6 +79,8 @@ object SimplePathRL extends App with LazyLogging{
   val ep = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]()
 
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
+
+  val writer = new OutputStreamWriter(new FileOutputStream("evidence.txt"))
 
   for((datum, ix) <- dataSet.zipWithIndex){
 
@@ -100,6 +107,8 @@ object SimplePathRL extends App with LazyLogging{
         logger.info("Success!!")
 
         val path = paths.head
+
+        this.printEvidence(path, agent, writer)
 
         logger.info("")
         logger.info("Path: " + path.mkString(" || "))
@@ -253,5 +262,7 @@ object SimplePathRL extends App with LazyLogging{
   bootstrapLines foreach osw.write
 
   osw.close
+
+  writer.close()
 
 }

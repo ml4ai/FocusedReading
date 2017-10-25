@@ -130,6 +130,11 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
       val x = f.controller
       val y = f.controlled
 
+      val sign = f.sign
+
+      // Store the references
+      references += (x, y, sign) -> f.reference
+
 
       if(!introductions.contains(x))
         introductions += (x -> iterationNum)
@@ -141,6 +146,27 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     }
 
     super.reconcile(connections)
+  }
+
+  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel): Option[Seq[Seq[Connection]]] = {
+    val result = super.successStopCondition(source, destination, model)
+
+    result match {
+      case Some(paths) => {
+          val newPaths = paths.map {
+              path =>
+                path.map {
+                    connection =>
+                      val references = this.references(connection.controller, connection.controlled, connection.sign)
+                      Connection(connection.controller, connection.controlled, connection.sign, connection.evidence, references)
+                  }
+
+          }
+
+            Some(newPaths)
+    }
+      case None => None
+    }
   }
 
 

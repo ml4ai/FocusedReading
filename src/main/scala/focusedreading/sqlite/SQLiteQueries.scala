@@ -217,11 +217,12 @@ class SQLiteQueries(path:String) extends LazyLogging{
   def fetchEvidence(connection: Connection):Iterable[String] = {
     // Fetch the evidence for the interactions
     val commandEvidence =
-      """ SELECT pmcid, evidence
+      s""" SELECT pmcid, evidence
         |  FROM Evidence AS e
         |  INNER JOIN Interactions AS i
         |  ON e.interaction = i.id
-        |  WHERE controller = ?
+        |  WHERE pmcid in (${connection.reference.map(s => s"'$s'").mkString(",")})
+        |  AND controller = ?
         |  AND controlled = ?;
       """.stripMargin
 

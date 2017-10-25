@@ -7,7 +7,7 @@ package org.clulab.reach.focusedreading.reinforcement_learning.actions
 import org.json4s.DefaultFormats
 
 import collection.mutable
-import org.json4s.JsonAST.JObject
+import org.json4s.JsonAST.{JArray, JObject, JValue}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.ActionValueLoader
 
@@ -25,40 +25,34 @@ case class ExploitEndpoints() extends FocusedReadingAction
 class FocusedReadingActionValues extends ActionValueLoader {
   implicit lazy val formats = DefaultFormats
 
+
+  private def extractCoefficients(ast:JValue, name:FocusedReadingAction):Option[(Action, mutable.HashMap[String, Double])] = {
+    ast \ name.toString match {
+      case JObject(obj) =>
+        val coefficients = new mutable.HashMap[String, Double]()
+
+        for((k, v) <- obj){
+          coefficients += (k -> v.extract[Double])
+        }
+
+        Some(name -> coefficients)
+
+      case _ =>
+        None
+    }
+  }
+
   override def loadActionValues(ast:JObject) = {
-    val valsExploreQuery = (ast \ "coefficientsExploreQuery").asInstanceOf[JObject].obj
-    val valsExploitQuery = (ast \ "coefficientsExploitQuery").asInstanceOf[JObject].obj
-    val valsExploreEndpoints = (ast \ "coefficientsExploreEndpoints").asInstanceOf[JObject].obj
-    val valsExploitEndpoints = (ast \ "coefficientsExploitEndpoints").asInstanceOf[JObject].obj
 
+    val coefficients = ast \ "coefficients"
+    val valsExploreQuery = extractCoefficients(coefficients, ExploreQuery())
+    val valsExploitQuery = extractCoefficients(coefficients, ExploitQuery())
+    val valsExploreEndpoints = extractCoefficients(coefficients, ExploreEndpoints())
+    val valsExploitEndpoints = extractCoefficients(coefficients, ExploitEndpoints())
 
-    // Make a map out of the coefficients
-    val coefficientsExploreQuery = new mutable.HashMap[String, Double]
-    for ((k, v) <- valsExploreQuery) {
-      coefficientsExploreQuery += (k -> v.extract[Double])
-    }
-
-    val coefficientsExploreEndpoints = new mutable.HashMap[String, Double]
-    for ((k, v) <- valsExploreEndpoints) {
-      coefficientsExploreEndpoints += (k -> v.extract[Double])
-    }
-
-    val coefficientsExploitQuery = new mutable.HashMap[String, Double]
-    for ((k, v) <- valsExploitQuery) {
-      coefficientsExploitQuery += (k -> v.extract[Double])
-    }
-
-    val coefficientsExploitEndpoints = new mutable.HashMap[String, Double]
-    for ((k, v) <- valsExploitEndpoints) {
-      coefficientsExploitEndpoints += (k -> v.extract[Double])
-    }
-
-    val coefficientsMap = Map[Action, mutable.HashMap[String, Double]](
-      ExploreQuery().asInstanceOf[Action] -> coefficientsExploreQuery,
-      ExploitQuery().asInstanceOf[Action] -> coefficientsExploitQuery,
-      ExploreEndpoints() -> coefficientsExploreEndpoints,
-      ExploitEndpoints() -> coefficientsExploitEndpoints
-    )
+    val coefficientsMap = Seq[Option[(Action, mutable.HashMap[String, Double])]](valsExploreQuery, valsExploitQuery, valsExploreEndpoints, valsExploitEndpoints).collect{
+      case Some((name, coeff)) => name -> coeff
+    }.toMap
 
     coefficientsMap
   }

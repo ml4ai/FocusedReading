@@ -25,13 +25,14 @@ trait SQLIteIEStrategy extends IEStrategy{
         val first = l.head
         val freq =  l.map(_._4).sum
         val evidence = l.flatMap(_._5)
-        (first._1, first._2, first._3, freq, evidence)
+        val pmcids = l.map(_._6)
+        (first._1, first._2, first._3, freq, evidence, pmcids)
     }.values.filter(_._4 > 1)
 
     // Instantiate interaction objects
     val connections = interactions map {
       c =>
-        new Connection(Participant("", c._1), Participant("", c._2), c._3, c._5)
+        new Connection(Participant("", c._1), Participant("", c._2), c._3, c._5, c._6)
     }
 
     connections

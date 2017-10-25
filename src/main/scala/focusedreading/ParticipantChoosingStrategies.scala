@@ -282,6 +282,7 @@ trait ExploreExploitParticipantsStrategy extends ParticipantChoosingStrategy{
   // Concrete members
   val queryLog = new mutable.ArrayBuffer[(Participant, Participant)]
   val introductions:mutable.HashMap[Participant, Int] = new mutable.HashMap[Participant, Int]()
+  val references = new mutable.HashMap[(Participant, Participant, Boolean), Seq[String]]()
   ///////////////////
 
   // Private auxiliary members
