@@ -5,7 +5,7 @@ import java.io.{FileOutputStream, OutputStreamWriter}
 import com.typesafe.scalalogging.LazyLogging
 import org.clulab.reach.focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
 import org.clulab.reach.focusedreading.ir.QueryStrategy._
-import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, Query, SQLIRStrategy}
+import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy, SQLIRStrategy}
 import org.clulab.reach.focusedreading.models._
 import org.clulab.reach.focusedreading.reinforcement_learning.actions._
 import org.clulab.reach.focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
@@ -97,7 +97,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   // Fields
 
   val actionCounters = new mutable.HashMap[String, Int]() ++ usedActions.map(_.toString -> 0).toMap
-  //++ Map[String, Int](ExploitEndpoints().toString -> 0, ExploreEndpoints().toString -> 0, ExploreQuery().toString -> 0, ExploitQuery().toString -> 0)
 
 
   var stage:FocusedReadingStage.Value = FocusedReadingStage.EndPoints
@@ -194,7 +193,16 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   override def observeState:State = {
-    fillState(this.model, iterationNum, queryLog, introductions)
+    // Do exploration query
+    //val (a, b) = chosenEndpoints
+    //val exploreQuery = Query(QueryStrategy.Disjunction, a, Some(b))
+    //val exploitQuery = Query(QueryStrategy.Conjunction, a, Some(b))
+
+    //val x = this.informationRetrival(exploreQuery)
+    //val y = this.informationRetrival(exploitQuery)
+    // DO explotation query
+
+    fillState(this.model, iterationNum, queryLog, introductions, 0, 0)
   }
 
   override def getIterationNum: Int = iterationNum
@@ -202,7 +210,10 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   override def getUsedActions: Seq[Action] = usedEndpointActions
 
   // Auxiliary methods
-  private def fillState(model:SearchModel, iterationNum:Int, queryLog:Seq[(Participant, Participant)], introductions:mutable.Map[Participant, Int]):State = {
+  private def fillState(model:SearchModel, iterationNum:Int,
+                        queryLog:Seq[(Participant, Participant)],
+                        introductions:mutable.Map[Participant, Int],
+                        explorationIRScore:Double, exploitationIRScore:Double):State = {
 
     val (a, b) = queryLog.last
     val log = queryLog flatMap (l => Seq(l._1, l._2))
@@ -228,7 +239,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     assert(paRank >= 0 && paRank <= 1, "PA rank is out of bounds")
     assert(pbRank >= 0 && pbRank <= 1, "PA rank is out of bounds")
 
-    FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded, pbUngrounded)
+    FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded, pbUngrounded, explorationIRScore, exploitationIRScore)
   }
 
   private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {

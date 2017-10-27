@@ -109,53 +109,6 @@ trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
                               model: SearchModel): (Participant, Participant) = {
 
 
-    // Uncomment for more sophisticated, less effective version
-//    val mostRecentIteration = participantIntroductions.values.max
-//
-//    val possibleEndpoints = (participantIntroductions map {
-//      case(p, i) =>
-//        if(i == mostRecentIteration)
-//          Some(p)
-//        else
-//          None
-//    } collect { case Some(p) => p }).toSeq
-//
-//
-//    val sourceComponent = model.getConnectedComponentOf(source).get.toSet
-//    val destComponent = model.getConnectedComponentOf(destination).get.toSet
-//
-//    val sourceChoices = possibleEndpoints.filter(p => sourceComponent.contains(p)).toSeq.sortBy(p => model.degree(p))//.reverse
-//    val destChoices = possibleEndpoints.filter(p => destComponent.contains(p)).toSeq.sortBy(p => model.degree(p))//.reverse
-//
-//    val ssA = new mutable.Stack[Participant]()
-//    ssA.push(source)
-//    ssA.pushAll(sourceChoices)
-//
-//    val ssB = new mutable.Stack[Participant]()
-//    ssB.push(destination)
-//    ssB.pushAll(destChoices)
-//
-//    val allNodes = new mutable.Stack[Participant]()
-//    allNodes.pushAll(possibleEndpoints.toSeq.sortBy(n => model.degree(n)))//.reverse)
-//
-//    var endpoints:(Participant, Participant) = (null, null)
-//
-//
-//    do{
-//      endpoints = pickEndpoints(ssA, ssB)
-//    }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && ssB.nonEmpty)
-//
-//    // Fallback if there are no new nodes in the components
-//    if(!differentEndpoints(endpoints, previouslyChosen)){
-//      ssA.pushAll(Seq(source) ++ sourceChoices)
-//      do{
-//        endpoints = pickEndpoints(ssA, allNodes)
-//      }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && allNodes.nonEmpty)
-//    }
-//
-//    endpoints
-    //////////////////////////
-
     // Uncomment for the simpler more effective implementation
     val mostRecentIteration = participantIntroductions.values.max
 

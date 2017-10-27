@@ -30,7 +30,9 @@ case class FocusedReadingState(paRank:Double,
                                paIterationIntroduction:Int,
                                pbIterationIntroduction:Int,
                                paUngrounded:Boolean,
-                               pbUngrounded:Boolean
+                               pbUngrounded:Boolean,
+                               exploreIRScore:Double,
+                               exploitIRScore:Double
                               ) extends State{
 
   override def hashCode(): Int = {
@@ -47,7 +49,9 @@ case class FocusedReadingState(paRank:Double,
         && pbQueryLogCount == that.pbQueryLogCount
         && sameComponent == that.sameComponent
         && paIterationIntroduction == that.paIterationIntroduction
-        && pbIterationIntroduction == that.pbIterationIntroduction)
+        && pbIterationIntroduction == that.pbIterationIntroduction
+        && exploreIRScore == that.exploitIRScore
+        && exploitIRScore == that.exploitIRScore)
         true
       else
         false
@@ -66,7 +70,9 @@ case class FocusedReadingState(paRank:Double,
       "paIterationIntroduction" -> paIterationIntroduction.toDouble,
       "pbIterationIntroduction" -> pbIterationIntroduction.toDouble,
       "paRank" -> paRank,
-      "pbRank" -> pbRank
+      "pbRank" -> pbRank,
+      "exploreIRScore" -> exploreIRScore,
+      "exploitIRScore" -> exploitIRScore
       //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")

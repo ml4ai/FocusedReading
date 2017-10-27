@@ -33,6 +33,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
   val papersRead = new mutable.ArrayBuffer[String]
 
   def focusedSearch(source:Participant, destination:Participant):Unit ={
+
     logger.info(s"Starting focused search with end points $source and $destination")
     do{
       iterationNum += 1

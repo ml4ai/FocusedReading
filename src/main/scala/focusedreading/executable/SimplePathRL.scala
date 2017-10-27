@@ -56,11 +56,11 @@ object SimplePathRL extends App with LazyLogging{
   def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter) = {
     val evidence:Seq[Iterable[String]] = path map agent.getEvidence
 
-    writer.write(s"${path.map(_.toString).mkString(" - ")}\n")
+    writer.write(s"${path.map(_.toString(humanFriendly = true)).mkString(" - ")}\n")
 
     for((c, e) <- path zip evidence){
       writer.write("")
-      writer.write(s"Evidence for connection $c")
+      writer.write(s"Evidence for connection ${c.toString(humanFriendly = true)}\n")
       writer.write("")
       for(s <- e){
         writer.write(s)
