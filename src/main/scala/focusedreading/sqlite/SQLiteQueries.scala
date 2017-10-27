@@ -53,7 +53,6 @@ class SQLiteQueries(path:String) extends LazyLogging{
       pmcids += resultSet.getString("pmcid")
 
     cmd.close
-    //conn.close
 
     // Do a set to remove duplicate entries, the back to a seq
     pmcids.toSeq
@@ -133,7 +132,6 @@ class SQLiteQueries(path:String) extends LazyLogging{
       pmcids += resultSet.getString("pmcid")
 
     cmd.close
-    //conn.close
 
     pmcids.toSeq
   }
@@ -153,7 +151,6 @@ class SQLiteQueries(path:String) extends LazyLogging{
 
     var cmd = conn.prepareStatement(commandInteractions)
 
-    //cmd.setString(1, pmcid)
 
     var resultSet = cmd.executeQuery
 
@@ -178,25 +175,6 @@ class SQLiteQueries(path:String) extends LazyLogging{
 
     val returnVal = new mutable.ArrayBuffer[(String, String, Boolean, Int, Iterable[String], String)]
 
-//    cmd = conn.prepareStatement(commandEvidence)
-//
-//    for(interaction <- interactions){
-//      val id = interaction._1
-//      cmd.setInt(1, id)
-//
-//      resultSet = cmd.executeQuery
-//      val ev = new mutable.ArrayBuffer[String]
-//
-//      while(resultSet.next)
-//        ev += s"${resultSet.getString("pmcid")}: ${resultSet.getString("evidence")}"
-//
-//      returnVal += Tuple5(interaction._2, interaction._3, interaction._4, interaction._5, ev.toSeq)
-//
-//      resultSet.close()
-//
-//    }
-//
-//    cmd.close()
 
     for(interaction <- interactions) {
       returnVal += Tuple6(interaction._2, interaction._3, interaction._4, interaction._5, Nil, interaction._6)
