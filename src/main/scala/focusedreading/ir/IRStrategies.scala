@@ -7,7 +7,7 @@ import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
   * Created by enrique on 20/02/17.
   */
 trait IRStrategy {
-  def informationRetrival(query: Query):Iterable[String]
+  def informationRetrival(query: Query):Iterable[(String, Float)]
 }
 
 
@@ -15,7 +15,7 @@ trait LuceneIRStrategy extends IRStrategy{
   val maxHits = 200
 
   override def informationRetrival(query: Query) = {
-    val pmcids:Iterable[String] = query.strategy match {
+    val pmcids:Iterable[(String, Float)] = query.strategy match {
       case Singleton => LuceneQueries.singletonQuery(query.A, maxHits)
       case Disjunction => LuceneQueries.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
       case Conjunction => LuceneQueries.binaryConjunctionQuery(query.A, query.B.get, maxHits)
@@ -58,7 +58,7 @@ trait SQLIRStrategy extends IRStrategy{
       }
     }
 
-    pmcids
+    pmcids map (p => (p, 0.0f))
   }
 
 }

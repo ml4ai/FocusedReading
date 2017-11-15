@@ -37,7 +37,7 @@ object LuceneQueries extends LazyLogging{
 
   val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
 
-  val indexDir = "/data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
+  val indexDir = "/Users/enrique/Research/focused_reading/pmc_oa_lucene" //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
   val nxmlSearcher:NxmlSearcher = new NxmlSearcher(indexDir)
   val nxmlDir = "/work/enoriega/fillblanks/nxml"
 
@@ -45,10 +45,10 @@ object LuceneQueries extends LazyLogging{
   // Load the serialized record if exists, otherwise create a new one
   val ldcFile = new File(nxmlDir, "luceneDocRecord.ser")
   val luceneDocRecord = if(ldcFile.exists()){
-    Serializer.load[mutable.HashMap[Int, String]](ldcFile.getAbsolutePath)
+    Serializer.load[mutable.HashMap[Int, (String, Float)]](ldcFile.getAbsolutePath)
   }
   else{
-    mutable.HashMap[Int, String]()
+    mutable.HashMap[Int, (String, Float)]()
   }
 
   /***
@@ -71,9 +71,9 @@ object LuceneQueries extends LazyLogging{
     * @param hits Set of documents coming from NxmlSearcher
     * @return list with the ids of documents already fetched from the index
     */
-  def fetchHitsWithCache(hits: Set[(Int, Float)]): List[String] = {
+  def fetchHitsWithCache(hits: Set[(Int, Float)]): List[(String, Float)] = {
     // Hits are tuples with (docId, score), fetch the documents from the ids if they haven't been fetched before
-    val existing = new ListBuffer[String]
+    val existing = new ListBuffer[(String, Float)]
     val toFetch = new ListBuffer[(Int, Float)]
 
     for (record <- hits) {
@@ -90,10 +90,8 @@ object LuceneQueries extends LazyLogging{
     val tfs = toFetch.toSet
     // Fetch the Document objects
     val docs = nxmlSearcher.docs(tfs)
-    val newPapers = docs.toSeq.sortBy(-_._2).map(d => d._1.get("id"))
+    val newPapers = docs.toSeq.sortBy(-_._2).map(d => (d._1.get("id"), d._2))
 
-    // Save them to disk
-    nxmlSearcher.saveNxml(nxmlDir, docs)
 
     // Add them to the record
     for ((t, d) <- toFetch.sortBy(-_._2) zip newPapers) {
@@ -116,7 +114,7 @@ object LuceneQueries extends LazyLogging{
     * @param b Participant B
     * @return
     */
-  def binarySpatialQuery(a:Participant, b:Participant, k:Int, totalHits:Int):Iterable[String] = {
+  def binarySpatialQuery(a:Participant, b:Participant, k:Int, totalHits:Int):Iterable[(String, Float)] = {
 
 
     // Build a query for lucene
@@ -133,7 +131,7 @@ object LuceneQueries extends LazyLogging{
     fetchHitsWithCache(hits)
   }
 
-  def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[String] = {
+  def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -148,7 +146,7 @@ object LuceneQueries extends LazyLogging{
     fetchHitsWithCache(hits)
   }
 
-  def binaryDisonjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[String] = {
+  def binaryDisonjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -163,7 +161,7 @@ object LuceneQueries extends LazyLogging{
     fetchHitsWithCache(hits)
   }
 
-  def singletonQuery(p:Participant, totalHits:Int):Iterable[String] = {
+  def singletonQuery(p:Participant, totalHits:Int):Iterable[(String, Float)] = {
     val synonyms = resolveParticipant(p.id)
 
     if(synonyms.isEmpty)

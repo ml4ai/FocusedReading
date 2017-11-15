@@ -117,7 +117,7 @@ class LuceneDataAccess(val path:String) extends LazyLogging with LuceneIRStrateg
             val statement2 = conn.prepareStatement(insertQueryResults)
             for(r <- results){
               statement2.setInt(1, qid)
-              statement2.setString(2, r)
+              statement2.setString(2, r._1) // TODO: Store the name IR Score into the tables as well
               statement2.addBatch
             }
 

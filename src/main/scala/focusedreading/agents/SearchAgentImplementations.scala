@@ -76,7 +76,8 @@ class SQLiteMultiPathSearchAgent(participantA:Participant, participantB:Particip
 class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)
   with ExploreExploitParticipantsStrategy
   //with MostConnectedParticipantsStrategy
-  with SQLIRStrategy
+  //with SQLIRStrategy
+  with LuceneIRStrategy
   with SQLIteIEStrategy {
 
   // SET HERE THE ACTIONS TO USE FOR TRAINING AND RUNNING
@@ -284,7 +285,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
     //this.uniquePapers ++= paperIds
 
-    val findings = this.informationExtraction(paperIds)
+    val findings = this.informationExtraction(paperIds map (p => p._1))
 
     // Count the introductions
     for(f <- findings){

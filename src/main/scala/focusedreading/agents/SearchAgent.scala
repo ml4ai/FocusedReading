@@ -42,7 +42,8 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
       triedPairs += Tuple2(a, b)
       val query = choseQuery(a, b, this.model)
       logger.info(s"Chosen query: $query")
-      val paperIds = informationRetrival(query)
+      val irResult = informationRetrival(query)
+      val paperIds = irResult map (_._1)
       // Keep track of the papers read
       papersRead ++= paperIds
       if(!paperIds.isEmpty)
