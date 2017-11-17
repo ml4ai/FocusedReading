@@ -77,9 +77,9 @@ object LinearSARSA extends App {
 
 
   val epochs = 30
-  val numEpisodes = pairs.size * epochs // 2000
+  val numEpisodes = 2000 //pairs.size * epochs
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 0, 0.02)
+  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 50, 0.02)
   val possibleActions:Set[Action] = Set(ExploitQuery(), ExploreQuery(), ExploreEndpoints(), ExploitEndpoints())
   val qFunction = new LinearApproximationValues(possibleActions)
 
@@ -97,14 +97,14 @@ object LinearSARSA extends App {
   // Serializer.save(learntPolicy, "learnt_policy.ser")
   learntPolicy.save("learnt_policy.json")
 
-  val steps = policyIteration.controlCount
-  val coefficients = qFunction.coefficients.toSeq
-  for(co <- coefficients){
-    val names = co._2.keySet.toSeq.sorted
-    val title = co._1.toString
-    val memory = qFunction.coefficientMemory(co._1).toArray
-    plotCoefficients(title, steps, names, memory)
-  }
+//  val steps = policyIteration.controlCount
+//  val coefficients = qFunction.coefficients.toSeq
+//  for(co <- coefficients){
+//    val names = co._2.keySet.toSeq.sorted
+//    val title = co._1.toString
+//    val memory = qFunction.coefficientMemory(co._1).toArray
+//    plotCoefficients(title, steps, names, memory)
+//  }
 
 }
 

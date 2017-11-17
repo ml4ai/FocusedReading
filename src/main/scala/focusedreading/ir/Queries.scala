@@ -7,11 +7,13 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.queryparser.classic.QueryParserBase
 import org.clulab.reach.focusedreading.Participant
 import org.clulab.reach.grounding.ReachKBUtils
-import org.clulab.reach.indexer.NxmlSearcher
+//import org.clulab.reach.indexer.NxmlSearcher
 import org.clulab.utils.Serializer
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+
+import com.redis._
 
 object QueryStrategy extends Enumeration{
   type Strategy = Value
@@ -24,32 +26,11 @@ case class Query(val strategy:QueryStrategy.Strategy, val A:Participant, val B:O
 /**
   * Created by enrique on 18/02/17.
   */
-object LuceneQueries extends LazyLogging{
+class LuceneQueries(indexDir:String) extends LazyLogging{
 
-  logger.info("Loading KBs...")
-  var lines = ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("uniprot-proteins.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("GO-subcellular-locations.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("ProteinFamilies.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("PubChem.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("PFAM-families.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("bio_process.tsv.gz")).getLines.toSeq
-  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hgnc.tsv.gz")).getLines.toSeq
-
-  val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
-
-  val indexDir = "/Users/enrique/Research/focused_reading/pmc_oa_lucene" //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
+  //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
   val nxmlSearcher:NxmlSearcher = new NxmlSearcher(indexDir)
   val nxmlDir = "/work/enoriega/fillblanks/nxml"
-
-  logger.info("Loading lucene record...")
-  // Load the serialized record if exists, otherwise create a new one
-  val ldcFile = new File(nxmlDir, "luceneDocRecord.ser")
-  val luceneDocRecord = if(ldcFile.exists()){
-    Serializer.load[mutable.HashMap[Int, (String, Float)]](ldcFile.getAbsolutePath)
-  }
-  else{
-    mutable.HashMap[Int, (String, Float)]()
-  }
 
   /***
     * Gets the synonyms from the KB files
@@ -58,7 +39,7 @@ object LuceneQueries extends LazyLogging{
     */
   def resolveParticipant(term:String) = {
 
-    dict.lift(term) match {
+    LuceneQueries.dict.lift(term) match {
       case Some(l) => "(" + l.map( x => "\"" + x + "\"").mkString(" OR ") + ")"
       case None =>
         logger.debug(s"Warning: missing term in the KB: $term")
@@ -67,46 +48,20 @@ object LuceneQueries extends LazyLogging{
   }
 
   /***
-    * Retrieves documents from lucene. If they have already been retrieved don't do it agaib
+    * Retrieves documents from lucene.
     * @param hits Set of documents coming from NxmlSearcher
-    * @return list with the ids of documents already fetched from the index
+    * @return list with the ids and IR scores of documents
     */
-  def fetchHitsWithCache(hits: Set[(Int, Float)]): List[(String, Float)] = {
+  def fetchHits(hits: Set[(Int, Float)]): List[(String, Float)] = {
     // Hits are tuples with (docId, score), fetch the documents from the ids if they haven't been fetched before
-    val existing = new ListBuffer[(String, Float)]
-    val toFetch = new ListBuffer[(Int, Float)]
 
-    for (record <- hits) {
-      if (luceneDocRecord contains record._1) {
-        // Get the IDs from the record
-        existing += luceneDocRecord(record._1)
-      }
-      else {
-        // Mark them for retrieval
-        toFetch += record
-      }
-    }
-
-    val tfs = toFetch.toSet
     // Fetch the Document objects
-    val docs = nxmlSearcher.docs(tfs)
-    val newPapers = docs.toSeq.sortBy(-_._2).map(d => (d._1.get("id"), d._2))
+    val docs = nxmlSearcher.docs(hits.toSeq)
+    // Get their PMCID and their IR score
+    val results = docs.map(d => (d._1.get("id"), d._2))
 
-
-    // Add them to the record
-    for ((t, d) <- toFetch.sortBy(-_._2) zip newPapers) {
-      luceneDocRecord += (t._1 -> d)
-    }
-
-    // Reserialize the record
-    // Serializer.save[mutable.HashMap[Int, String]](luceneDocRecord, ldcFile.getAbsolutePath)
-
-    existing.toList ++ newPapers
+    results.toList
   }
-
-
-//  val totalHits = 200 // Max # of hits per query
-
 
   /***
     * Expands the frontier with a focus on finding info that may create a path between participants
@@ -128,7 +83,7 @@ object LuceneQueries extends LazyLogging{
     var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " AND " + bSynonyms + ")~"+k)
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
-    fetchHitsWithCache(hits)
+    fetchHits(hits)
   }
 
   def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
@@ -143,7 +98,7 @@ object LuceneQueries extends LazyLogging{
     var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " AND " + bSynonyms + ")")
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
-    fetchHitsWithCache(hits)
+    fetchHits(hits)
   }
 
   def binaryDisonjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
@@ -158,7 +113,7 @@ object LuceneQueries extends LazyLogging{
     var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " OR " + bSynonyms + ")")
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
-    fetchHitsWithCache(hits)
+    fetchHits(hits)
   }
 
   def singletonQuery(p:Participant, totalHits:Int):Iterable[(String, Float)] = {
@@ -170,7 +125,66 @@ object LuceneQueries extends LazyLogging{
     var luceneQuery = QueryParserBase.escape("(" + synonyms + ")")
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
-    fetchHitsWithCache(hits)
+    fetchHits(hits)
   }
 
+}
+
+object LuceneQueries extends LazyLogging {
+  logger.info("Loading KBs...")
+  var lines = ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("uniprot-proteins.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("GO-subcellular-locations.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("ProteinFamilies.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("PubChem.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("PFAM-families.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("bio_process.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hgnc.tsv.gz")).getLines.toSeq
+
+  val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
+
+}
+
+/**
+  * Queries Lucene and caches the results on a Redis server to improve performance
+  * @param indexDir
+  */
+class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int = 6379) extends LuceneQueries(indexDir) {
+
+  logger.info(s"Connecting to Redis @ $server:$port")
+  val redisClient = new RedisClient(server, port)
+
+  override def fetchHits(hits: Set[(Int, Float)]): List[(String, Float)] = {
+
+    val orderedHits = hits.toSeq
+    val cachedElements = orderedHits map (h => s"id:${h._1}") map redisClient.get[String]
+
+    val zipped = orderedHits zip cachedElements
+
+    val existing = zipped collect {
+      case ((id:Int, ir:Float), Some(pmcid)) => (pmcid, ir)
+    }
+
+    val pending = zipped collect {
+      case ((id, ir), None) => (id, ir)
+    }
+
+
+    // Fetch the pending values from Lucene and cache them in Redis
+    val docs = nxmlSearcher.docs(pending)
+    val newElements = docs.map(d => (d._1.get("id"), d._2))
+
+    pending.map(_._1) zip newElements.map(_._1) foreach {
+      case (id, pmcid) =>
+        redisClient.set(s"id:$id", pmcid)
+    }
+
+
+    existing.toList ++ newElements
+
+  }
+
+//  override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+//
+//    super.binaryConjunctionQuery(a, b, totalHits)
+//  }
 }

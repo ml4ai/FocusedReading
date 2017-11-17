@@ -313,7 +313,9 @@ trait REACHIEStrategy extends IEStrategy {
 
   override def informationExtraction(pmcids: Iterable[String]) = {
 
-    val paperSet = pmcids.map(p => new File(LuceneQueries.nxmlDir, s"$p.nxml").getAbsolutePath)
+    val luceneQuerier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene") // TODO: Clean up this and implement it correctly
+
+    val paperSet = pmcids.map(p => new File(luceneQuerier.nxmlDir, s"$p.nxml").getAbsolutePath)
     logger.info(s"Query returned ${paperSet.size} hits")
 
     // Extract them

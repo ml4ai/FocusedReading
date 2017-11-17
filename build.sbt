@@ -23,5 +23,6 @@ libraryDependencies ++= Seq(
   "org.apache.lucene" % "lucene-analyzers-common" % "5.3.1",
   "org.apache.lucene" % "lucene-queryparser" % "5.3.1",
   "org.clulab" %% "reach-main" % "1.3.3-SNAPSHOT",
-  "org.xerial" % "sqlite-jdbc" % "3.16.1"
+  "org.xerial" % "sqlite-jdbc" % "3.16.1",
+  "net.debasishg" %% "redisclient" % "3.4"
 )

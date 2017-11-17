@@ -5,7 +5,7 @@ import java.io.{FileOutputStream, OutputStreamWriter}
 import com.typesafe.scalalogging.LazyLogging
 import org.clulab.reach.focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
 import org.clulab.reach.focusedreading.ir.QueryStrategy._
-import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy, SQLIRStrategy}
+import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, SQLIRStrategy, RedisIRStrategy, Query, QueryStrategy}
 import org.clulab.reach.focusedreading.models._
 import org.clulab.reach.focusedreading.reinforcement_learning.actions._
 import org.clulab.reach.focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
@@ -40,7 +40,9 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
 
 class SQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
-  with SQLIRStrategy
+  //with SQLIRStrategy
+  //with LuceneIRStrategy
+  with RedisIRStrategy
   with SQLIteIEStrategy {
 
 
@@ -76,8 +78,8 @@ class SQLiteMultiPathSearchAgent(participantA:Participant, participantB:Particip
 class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)
   with ExploreExploitParticipantsStrategy
   //with MostConnectedParticipantsStrategy
-  //with SQLIRStrategy
-  with LuceneIRStrategy
+  with SQLIRStrategy
+  //with LuceneIRStrategy
   with SQLIteIEStrategy {
 
   // SET HERE THE ACTIONS TO USE FOR TRAINING AND RUNNING
@@ -90,8 +92,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   val usedEndpointActions = usedActions filter {
-    case _:ExploreEndpoints => false
-    case _:ExploitEndpoints => true
+    case _:ExploreEndpoints => true
+    case _:ExploitEndpoints => false
     case _ => false
   }
 
@@ -194,16 +196,20 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   override def observeState:State = {
-    // Do exploration query
-    //val (a, b) = chosenEndpoints
-    //val exploreQuery = Query(QueryStrategy.Disjunction, a, Some(b))
-    //val exploitQuery = Query(QueryStrategy.Conjunction, a, Some(b))
+    // Do IR queries
+    val (a, b) = queryLog.last
+    val exploreQuery = Query(QueryStrategy.Disjunction, a, Some(b))
+    val exploitQuery = Query(QueryStrategy.Conjunction, a, Some(b))
 
-    //val x = this.informationRetrival(exploreQuery)
-    //val y = this.informationRetrival(exploitQuery)
-    // DO explotation query
+    val exploreIRScores = this.informationRetrival(exploreQuery) map (_._2)
+    val exploitIRScores = this.informationRetrival(exploitQuery) map (_._2)
 
-    fillState(this.model, iterationNum, queryLog, introductions, 0, 0)
+    // Aggregate IR scores
+
+    val meanExploreScore = if(exploreIRScores.size == 0) 0.0 else (exploreIRScores.sum / exploreIRScores.size)
+    val meanExploitScore = if(exploitIRScores.size == 0) 0.0 else (exploitIRScores.sum / exploitIRScores.size)
+
+    fillState(this.model, iterationNum, queryLog, introductions, meanExploreScore, meanExploitScore)
   }
 
   override def getIterationNum: Int = iterationNum
@@ -240,7 +246,9 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     assert(paRank >= 0 && paRank <= 1, "PA rank is out of bounds")
     assert(pbRank >= 0 && pbRank <= 1, "PA rank is out of bounds")
 
-    FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded, pbUngrounded, explorationIRScore, exploitationIRScore)
+    FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
+      pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded,
+      pbUngrounded, explorationIRScore, exploitationIRScore)
   }
 
   private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {

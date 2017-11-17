@@ -51,10 +51,14 @@ trait ParticipantChoosingStrategy {
 }
 
 trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
+
+
   override def choseEndPoints(source:Participant,
                      destination:Participant,
                      previouslyChosen:Set[(Participant, Participant)],
                      model:SearchModel) = {
+
+
 
     // Find the components to which each endpoint belongs
     val components = (model.getConnectedComponentOf(source), model.getConnectedComponentOf(destination))

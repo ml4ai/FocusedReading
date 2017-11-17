@@ -14,18 +14,20 @@ trait IRStrategy {
 trait LuceneIRStrategy extends IRStrategy{
   val maxHits = 200
 
+  val luceneQuerier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
+
   override def informationRetrival(query: Query) = {
     val pmcids:Iterable[(String, Float)] = query.strategy match {
-      case Singleton => LuceneQueries.singletonQuery(query.A, maxHits)
-      case Disjunction => LuceneQueries.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
-      case Conjunction => LuceneQueries.binaryConjunctionQuery(query.A, query.B.get, maxHits)
-      case Spatial => LuceneQueries.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
+      case Singleton => luceneQuerier.singletonQuery(query.A, maxHits)
+      case Disjunction => luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+      case Conjunction => luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
+      case Spatial => luceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
       case Cascade => {
-        var results = LuceneQueries.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
+        var results = luceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
         if(results.isEmpty){
-          results = LuceneQueries.binaryConjunctionQuery(query.A, query.B.get, maxHits)
+          results = luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
           if(results.isEmpty)
-            results = LuceneQueries.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+            results = luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
         }
         results
       }
@@ -60,5 +62,34 @@ trait SQLIRStrategy extends IRStrategy{
 
     pmcids map (p => (p, 0.0f))
   }
+}
 
+
+trait RedisIRStrategy extends IRStrategy{
+  val maxHits = 200
+
+  val luceneQuerier = new RedisLuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
+
+  override def informationRetrival(query: Query) = {
+
+    val pmcids:Iterable[(String, Float)] = query.strategy match {
+      case Singleton => luceneQuerier.singletonQuery(query.A, maxHits)
+      case Disjunction => luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+      case Conjunction => luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
+      case Spatial => luceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
+      case Cascade => {
+        var results = luceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
+        if(results.isEmpty){
+          results = luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
+          if(results.isEmpty)
+            results = luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+        }
+        results
+      }
+
+    }
+
+
+    pmcids
+  }
 }
