@@ -150,7 +150,7 @@ object LuceneQueries extends LazyLogging {
   */
 class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int = 6379) extends LuceneQueries(indexDir) {
 
-  logger.info(s"Connecting to Redis @ $server:$port")
+  //logger.info(s"Connecting to Redis @ $server:$port")
   val redisClient = new RedisClient(server, port)
 
   override def fetchHits(hits: Set[(Int, Float)]): List[(String, Float)] = {
@@ -183,8 +183,104 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
 
   }
 
-//  override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
-//
-//    super.binaryConjunctionQuery(a, b, totalHits)
-//  }
+  override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    val queryKey = s"conjunction:${a.id}:${b.id}"
+    val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
+
+
+    if(cachedResultSize > 1) {
+      val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
+      val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
+
+    }
+    else{
+      // Query lucene
+      val result= super.binaryConjunctionQuery(a, b, totalHits)
+      // Store the results on Redis
+      result foreach {
+        case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
+          redisClient.rpush(s"$queryKey:irscore", irScore)
+      }
+      // Return the query result
+      result
+    }
+
+  }
+
+  override def binaryDisonjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    val queryKey = s"disjunction:${a.id}:${b.id}"
+    val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
+
+
+    if(cachedResultSize > 1) {
+      val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
+      val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
+
+    }
+    else{
+        // Query lucene
+      val result= super.binaryDisonjunctionQuery(a, b, totalHits)
+      // Store the results on Redis
+      result foreach {
+        case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
+          redisClient.rpush(s"$queryKey:irscore", irScore)
+      }
+      // Return the query result
+      result
+    }
+  }
+
+  override def binarySpatialQuery(a: Participant, b: Participant, k: Int, totalHits: Int): Iterable[(String, Float)] = {
+    val queryKey = s"spatial:${a.id}:${b.id}:$k"
+    val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
+
+
+    if(cachedResultSize > 1) {
+      val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
+      val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
+
+    }
+    else{
+      // Query lucene
+      val result= super.binarySpatialQuery(a, b, k, totalHits)
+      // Store the results on Redis
+      result foreach {
+        case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
+          redisClient.rpush(s"$queryKey:irscore", irScore)
+      }
+      // Return the query result
+      result
+    }
+  }
+
+  override def singletonQuery(p: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    val queryKey = s"singleton:${p.id}"
+    val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
+
+
+    if(cachedResultSize > 1) {
+      val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
+      val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
+
+    }
+    else{
+      // Query lucene
+      val result= super.singletonQuery(p, totalHits)
+      // Store the results on Redis
+      result foreach {
+        case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
+          redisClient.rpush(s"$queryKey:irscore", irScore)
+      }
+      // Return the query result
+      result
+    }
+  }
 }

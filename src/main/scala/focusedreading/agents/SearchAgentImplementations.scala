@@ -53,7 +53,7 @@ class SQLiteSearchAgent(participantA:Participant, participantB:Participant) exte
 
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Disjunction, source, Some(destination))
+                          model: SearchModel) = Query(Cascade, source, Some(destination))
 
 }
 
