@@ -2,7 +2,7 @@ package org.clulab.reach.focusedreading.executable
 
 import com.typesafe.scalalogging.LazyLogging
 import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.reach.focusedreading.agents._
+import org.clulab.focusedreading.agents._
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Paths
 

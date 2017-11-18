@@ -5,7 +5,7 @@ import java.io.{File, FileOutputStream, OutputStreamWriter}
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
+import org.clulab.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
 import org.clulab.reach.focusedreading.reinforcement_learning.actions._
 import org.sarsamora.environment.Environment
 import org.clulab.reach.focusedreading.reinforcement_learning.environment.SimplePathEnvironment

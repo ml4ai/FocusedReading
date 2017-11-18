@@ -6,7 +6,7 @@ import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.reach.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
+import org.clulab.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
 import org.clulab.reach.focusedreading.executable.SimplePath.{args, logger}
 import org.clulab.reach.focusedreading.tracing.AgentRunTrace
 import org.json4s.native.JsonMethods.{pretty, render}

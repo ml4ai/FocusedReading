@@ -16,15 +16,15 @@ import java.nio.file.Path
   * Stores all the steps taken by a focused reader
   */
 
-case class IterativeStep(val number:Int, val graphBefore:Option[Graph[Participant, LDiEdge]],
-                         val graphAfter:Option[Graph[Participant, LDiEdge]], val chosenParticipants:(Participant, Participant),
-                         val queryStrategy:Strategy,
-                         val irResults:Iterable[(String, Double)], // PMCID + IR Score
-                         val ieResults:Iterable[Connection])
+case class IterativeStep(number:Int, graphBefore:Option[Graph[Participant, LDiEdge]],
+                         graphAfter:Option[Graph[Participant, LDiEdge]], chosenParticipants:(Participant, Participant),
+                         queryStrategy:Strategy,
+                         irResults:Iterable[(String, Float)], // PMCID + IR Score
+                         ieResults:Iterable[Connection])
 
-case class AgentRunTrace(val source:Participant, val destination:Participant,
-                         val steps:Seq[IterativeStep], val recoveredPath:Option[Seq[Connection]],
-                         val groundTruth:Option[Seq[String]])
+case class AgentRunTrace(source:Participant, destination:Participant,
+                         steps:Seq[IterativeStep], recoveredPath:Option[Seq[Connection]],
+                         groundTruth:Option[Seq[String]])
 
 
 object AgentRunTrace{

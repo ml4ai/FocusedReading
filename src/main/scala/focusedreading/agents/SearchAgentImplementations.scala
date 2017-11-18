@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.agents
+package org.clulab.focusedreading.agents
 
 import java.io.{FileOutputStream, OutputStreamWriter}
 
@@ -13,7 +13,8 @@ import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
 import org.clulab.reach.focusedreading._
-import org.clulab.reach.focusedreading.agents.FocusedReadingStage._
+import org.clulab.focusedreading.agents._
+import org.clulab.focusedreading.agents.FocusedReadingStage._
 
 import scala.collection.mutable
 
@@ -57,22 +58,22 @@ class SQLiteSearchAgent(participantA:Participant, participantB:Participant) exte
 
 }
 
-class SQLiteMultiPathSearchAgent(participantA:Participant, participantB:Participant) extends MultiplePathsAgent(participantA, participantB)
-  with MostConnectedParticipantsStrategy
-  with SQLIRStrategy
-  with SQLIteIEStrategy {
-
-
-  override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
-
-
-
-  override def choseQuery(source: Participant,
-                          destination: Participant,
-                          model: SearchModel) = Query(Cascade, source, Some(destination))
-
-
-}
+//class SQLiteMultiPathSearchAgent(participantA:Participant, participantB:Participant) extends MultiplePathsAgent(participantA, participantB)
+//  with MostConnectedParticipantsStrategy
+//  with SQLIRStrategy
+//  with SQLIteIEStrategy {
+//
+//
+//  override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
+//
+//
+//
+//  override def choseQuery(source: Participant,
+//                          destination: Participant,
+//                          model: SearchModel) = Query(Cascade, source, Some(destination))
+//
+//
+//}
 
 
 class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)

@@ -1,7 +1,10 @@
 package org.clulab.reach.focusedreading.reinforcement_learning.states
 
 /**
-  * Created by enrique on 31/03/17.
+  * Created by enrique on 03/31/17.
+  * Last updated by enrique on 11/17/17
+  *
+  * Contains the state representation data structure and related code for Focused Reading
   */
 
 import org.sarsamora.states.State
@@ -21,6 +24,21 @@ object RankBin extends Enumeration {
   }
 }
 
+/**
+  * State representation of the FR search process
+  * @param paRank Participant A (PA) rank in it's component
+  * @param pbRank Participant B (PB) rank in it's component
+  * @param iteration Iteration number of the process
+  * @param paQueryLogCount How many time has PA being used to anchor the IR search
+  * @param pbQueryLogCount How many time has PB being used to anchor the IR search
+  * @param sameComponent Whether PA and PB in the same connected component
+  * @param paIterationIntroduction Iteration # in which PA was introduced to the KB graph
+  * @param pbIterationIntroduction Iteration # in which PB was introduced to the KB graph
+  * @param paUngrounded Whether PA has a grounding ID (not a UAZ id generated autimatically by REACH)
+  * @param pbUngrounded Whether PB has a grounding ID (not a UAZ id generated autimatically by REACH)
+  * @param exploreIRScore IR aggregated score of the exploration IR query
+  * @param exploitIRScore IR aggregated score of the exploritation IR query
+  */
 case class FocusedReadingState(paRank:Double,
                                pbRank:Double,
                                iteration:Int,
@@ -36,10 +54,12 @@ case class FocusedReadingState(paRank:Double,
                               ) extends State{
 
   override def hashCode(): Int = {
+    // TODO: Automatically calculate this using reflection
     s"$paRank-$pbRank-$iteration-$paQueryLogCount-$pbQueryLogCount-$sameComponent-$paIterationIntroduction-$pbIterationIntroduction--$paUngrounded-$pbUngrounded".hashCode
   }
 
   override def equals(obj: scala.Any): Boolean = {
+    // TODO: Automatically calculate this using reflection
     if(obj.getClass == this.getClass){
       val that = obj.asInstanceOf[FocusedReadingState]
       if(paRank == that.paRank
@@ -61,6 +81,10 @@ case class FocusedReadingState(paRank:Double,
     }
   }
 
+  /**
+    * Convert the state representation to feature values used by a learning component
+    * @return Map of feature names -> feature values
+    */
   override def toFeatures():Map[String, Double] = {
     Map(
       "iteration" -> iteration.toDouble,
@@ -78,33 +102,3 @@ case class FocusedReadingState(paRank:Double,
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")
   }
 }
-
-object FocusedReadingState{
-
-  val iterationBound = 10
-
-  // Size of the state space
-  def cardinality:Int = {
-    RankBin.values.size * RankBin.values.size * iterationBound * iterationBound * iterationBound * 2 * iterationBound * iterationBound
-  }
-
-//  def enumerate:Iterable[State] = {
-//
-//    val iterations = 1 to 10
-//
-//    val states = for{
-//      paRank <- RankBin.values;
-//      pbRank <- RankBin.values;
-//      iteration <- iterations;
-//      paQueryLogCount <- iterations;
-//      pbQueryLogCount <- iterations;
-//      sameComponent <- Seq(true, false);
-//      paIterationIntroduction <- iterations;
-//      pbIterationIntroduction <- iterations
-//    } yield FocusedReadingState(paRank, pbRank, iteration, paQueryLogCount, pbQueryLogCount, sameComponent, paIterationIntroduction, pbIterationIntroduction)
-//
-//    assert(states.size == cardinality, s"There's a different number of stats than the computed cardinality. States: ${states.size}, Cardinality: $cardinality")
-//    states
-//  }
-}
-
