@@ -143,7 +143,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
       s""" SELECT i.*, pi.frequency, pi.pmcid
         |  FROM Paper_Interaction AS pi
         |  INNER JOIN Interactions AS i
-        |  ON interaction = id
+        |  ON interaction = i.id
         | WHERE pmcid in (${pmcids.map(s => s"'$s'").mkString(",")})
       """.stripMargin
 
@@ -180,10 +180,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
       returnVal += Tuple6(interaction._2, interaction._3, interaction._4, interaction._5, Nil, interaction._6)
     }
 
-    //if(!conn.isClosed)
-      //conn.close()
-
-    returnVal.toSeq
+    returnVal
   }
 
 

@@ -8,7 +8,8 @@ import org.clulab.reach.focusedreading.{Connection, Participant}
   */
 trait SQLIteIEStrategy extends IEStrategy{
 
-  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/interactions.sqlite")
+  //val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/interactions.sqlite")
+  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite")
 
   override def informationExtraction(pmcids: Iterable[String]):Iterable[Connection] = {
 
