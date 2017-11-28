@@ -21,7 +21,7 @@ import org.sarsamora.policies._
 /**
   * Created by enrique on 03/04/17.
   */
-object SimplePathRL extends App with LazyLogging{
+object Testing extends App with LazyLogging{
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
