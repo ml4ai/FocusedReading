@@ -1,10 +1,9 @@
-package org.clulab.reach.focusedreading.reinforcement_learning.exec.focused_reading
+package focusedreading.executable
 
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
 import org.clulab.focusedreading.agents.PolicySearchAgent
 import org.clulab.reach.focusedreading.Participant
-import org.clulab.reach.focusedreading.reinforcement_learning.actions._
 import org.clulab.reach.focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment

@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.executable
+package focusedreading.executable
 
 import java.io.{BufferedWriter, File, FileOutputStream, FileWriter}
 import java.io._
@@ -7,7 +7,7 @@ import java.nio.file.Paths
 import org.apache.commons.io.FileUtils
 import org.clulab.reach.focusedreading.{Connection, Participant}
 import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
-import org.clulab.reach.focusedreading.executable.SimplePath.{args, logger}
+import focusedreading.executable.Baseline.{args, logger}
 import org.clulab.reach.focusedreading.tracing.AgentRunTrace
 import org.json4s.native.JsonMethods.{pretty, render}
 

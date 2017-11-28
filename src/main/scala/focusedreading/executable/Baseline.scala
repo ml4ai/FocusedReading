@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.executable
+package focusedreading.executable
 
 import com.typesafe.scalalogging.LazyLogging
 import org.clulab.reach.focusedreading.{Connection, Participant}
@@ -19,7 +19,7 @@ import scala.collection.mutable
 /**
   * Created by enrique on 12/03/17.
   */
-object SimplePath extends App with LazyLogging{
+object Baseline extends App with LazyLogging{
 
 
     def getParticipants(path:List[Connection]):List[String] = {
