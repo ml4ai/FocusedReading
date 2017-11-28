@@ -94,9 +94,9 @@ case class FocusedReadingState(paRank:Double,
       "paIterationIntroduction" -> paIterationIntroduction.toDouble,
       "pbIterationIntroduction" -> pbIterationIntroduction.toDouble,
       "paRank" -> paRank,
-      "pbRank" -> pbRank,
-      "exploreIRScore" -> exploreIRScore,
-      "exploitIRScore" -> exploitIRScore
+      "pbRank" -> pbRank
+      //"exploreIRScore" -> exploreIRScore,
+      //"exploitIRScore" -> exploitIRScore
       //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")

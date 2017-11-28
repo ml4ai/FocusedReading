@@ -105,7 +105,7 @@ object SimplePath extends App with LazyLogging{
       logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
       //val agent = new LuceneReachSearchAgent(participantA, participantB)
-      val agent = new SQLiteSearchAgent(participantA, participantB)
+      val agent = new RedisSQLiteSearchAgent(participantA, participantB)
       // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
       agent.focusedSearch(participantA, participantB)
 

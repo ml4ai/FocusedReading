@@ -2,23 +2,21 @@ package org.clulab.reach.focusedreading.reinforcement_learning.exec.focused_read
 
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
+import org.clulab.focusedreading.agents.PolicySearchAgent
 import org.clulab.reach.focusedreading.Participant
 import org.clulab.reach.focusedreading.reinforcement_learning.actions._
 import org.clulab.reach.focusedreading.reinforcement_learning.environment.SimplePathEnvironment
-import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues, TabularValues}
-import org.sarsamora.policy_iteration.td.{QLearning, SARSA}
-import org.sarsamora.{Decays, scalaRand}
-import org.sarsamora.environment.Environment
 import org.sarsamora.actions.Action
-
-import scala.collection.immutable.HashSet
-import scala.collection.mutable
+import org.sarsamora.environment.Environment
+import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
+import org.sarsamora.policy_iteration.td.SARSA
+import org.sarsamora.{Decays, scalaRand}
 
 /**
   * Created by enrique on 31/03/17.
   */
 
-object LinearSARSA extends App {
+object Training extends App {
 
   // The first argument is the input file
 
@@ -30,11 +28,11 @@ object LinearSARSA extends App {
         (t.head, t.last)
     }.toList
 
-  def randomnizedPairs = {
+  def randomizedPairs = {
     scalaRand.shuffle(pairs)
   }
 
-  val dataSet:Iterator[Tuple2[String, String]] = Iterator.continually(randomnizedPairs).flatten
+  val dataSet:Iterator[Tuple2[String, String]] = Iterator.continually(randomizedPairs).flatten
 
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
@@ -80,7 +78,8 @@ object LinearSARSA extends App {
   val numEpisodes = 2000 //pairs.size * epochs
 
   val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 50, 0.02)
-  val possibleActions:Set[Action] = Set(ExploitQuery(), ExploreQuery(), ExploreEndpoints(), ExploitEndpoints())
+  // TODO: Put this on a better place
+  val possibleActions:Set[Action] = Set[Action]() ++ PolicySearchAgent.usedActions
   val qFunction = new LinearApproximationValues(possibleActions)
 
   // Decaying epsilon

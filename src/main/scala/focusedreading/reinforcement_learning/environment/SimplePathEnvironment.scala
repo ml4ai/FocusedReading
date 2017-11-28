@@ -1,7 +1,7 @@
 package org.clulab.reach.focusedreading.reinforcement_learning.environment
 
 import org.clulab.reach.focusedreading.Participant
-import org.clulab.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent}
+import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent}
 import org.sarsamora.environment.Environment
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.DummyPolicy

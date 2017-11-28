@@ -223,7 +223,7 @@ trait FurthestParticipantStrategy extends ParticipantChoosingStrategy{
   }
 }
 
-trait ExploreExploitParticipantsStrategy extends ParticipantChoosingStrategy{
+trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
 
   // Abstract members

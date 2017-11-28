@@ -18,20 +18,27 @@ import org.clulab.focusedreading.agents.FocusedReadingStage._
 
 import scala.collection.mutable
 
+/*
+ * Created by enrique on 18/02/17.
+ *
+ * Mixes traits together to implement FR search agents
+ */
+
 /**
-  * Created by enrique on 18/02/17.
+  * Uses Lucene and REACH directly to do a FR simple path search
+  * @param participantA Origin of the search
+  * @param participantB Destination of the search
   */
 class LuceneReachSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
   with LuceneIRStrategy
   with REACHIEStrategy {
 
-
-  //override val model:Model = Graph[Participant, LDiEdge](participantA, participantB) // Directed graph with the model.
+  // Graph4Scala model
   override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
 
 
-
+  // Follow the cascade query strategy
   override def choseQuery(source: Participant,
                           destination: Participant,
                           model: SearchModel) = Query(Cascade, source, Some(destination))
@@ -39,15 +46,17 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
 
 }
 
-class SQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
+/**
+  * Uses Redis for IR and SQLite for IE to do simple path FR
+  * @param participantA Origin of the search
+  * @param participantB Destination of the search
+  */
+class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
-  //with SQLIRStrategy
-  //with LuceneIRStrategy
   with RedisIRStrategy
   with SQLIteIEStrategy {
 
 
-//  override val model:Model = Graph[Participant, LDiEdge](participantA, participantB) // Directed graph with the model.
   override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
 
 
@@ -58,49 +67,48 @@ class SQLiteSearchAgent(participantA:Participant, participantB:Participant) exte
 
 }
 
-//class SQLiteMultiPathSearchAgent(participantA:Participant, participantB:Participant) extends MultiplePathsAgent(participantA, participantB)
-//  with MostConnectedParticipantsStrategy
-//  with SQLIRStrategy
-//  with SQLIteIEStrategy {
-//
-//
-//  override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
-//
-//
-//
-//  override def choseQuery(source: Participant,
-//                          destination: Participant,
-//                          model: SearchModel) = Query(Cascade, source, Some(destination))
-//
-//
-//}
 
-
-class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)
-  with ExploreExploitParticipantsStrategy
-  //with MostConnectedParticipantsStrategy
-  with SQLIRStrategy
-  //with LuceneIRStrategy
-  with SQLIteIEStrategy {
-
-  // SET HERE THE ACTIONS TO USE FOR TRAINING AND RUNNING
+/**
+  * Companion object. TODO: Find a better place for these fields
+  */
+object PolicySearchAgent{
+  // All the possible actions
   val usedActions = Seq(ExploitQuery(), ExploreQuery(), ExploitEndpoints(), ExploreEndpoints())
 
+  // Set to false the actions that you want to ignore
   val usedQueryActions = usedActions filter {
     case _:ExploreQuery => true
     case _:ExploitQuery => true
     case _ => false
   }
 
+  // Set to false the actions that you want to ignore
   val usedEndpointActions = usedActions filter {
     case _:ExploreEndpoints => true
     case _:ExploitEndpoints => false
     case _ => false
   }
+}
+
+
+/**
+  * Search agent that follows a policy, presumably learnt using RL.
+  * Look at the traits to see which strategies it follows
+  * @param participantA Origin of the search
+  * @param participantB Destination of the search
+  * @param policy
+  */
+class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)
+  with PolicyParticipantsStrategy
+  with RedisIRStrategy
+  //with LuceneIRStrategy
+  with SQLIteIEStrategy {
+
+
 
   // Fields
 
-  val actionCounters = new mutable.HashMap[String, Int]() ++ usedActions.map(_.toString -> 0).toMap
+  val actionCounters = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
 
 
   var stage:FocusedReadingStage.Value = FocusedReadingStage.EndPoints
@@ -179,7 +187,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
     queryLog += Tuple2(a, b)
 
-    val possibleActions:Seq[Action] = usedQueryActions//Seq(ExploreQuery(), ExploitQuery())
+    val possibleActions:Seq[Action] = PolicySearchAgent.usedQueryActions//Seq(ExploreQuery(), ExploitQuery())
 
     // Create state
     val state = this.observeState
@@ -215,7 +223,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
   override def getIterationNum: Int = iterationNum
 
-  override def getUsedActions: Seq[Action] = usedEndpointActions
+  override def getUsedActions: Seq[Action] = PolicySearchAgent.usedEndpointActions
 
   // Auxiliary methods
   private def fillState(model:SearchModel, iterationNum:Int,
@@ -338,11 +346,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     }
   }
 
-//  private def printSuccess(path:String, pa:Participant, pb:Participant): Unit ={
-//    val w = new OutputStreamWriter(new FileOutputStream(path, true))
-//    w.write(s"${pa.id}\t${pb.id}\n")
-//    w.close()
-//  }
 
   private def queryActionToStrategy(action: Action, a: Participant, b: Participant) = {
     action match {
@@ -388,8 +391,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   def possibleActions(): Seq[Action] = (stage: @unchecked) match {
-    case FocusedReadingStage.EndPoints => usedEndpointActions//Seq(ExploitEndpoints(), ExploreEndpoints())
-    case FocusedReadingStage.Query => usedQueryActions//Seq(ExploitQuery(), ExploreQuery())
+    case FocusedReadingStage.EndPoints => PolicySearchAgent.usedEndpointActions
+    case FocusedReadingStage.Query => PolicySearchAgent.usedQueryActions
   }
   /////////////////
 

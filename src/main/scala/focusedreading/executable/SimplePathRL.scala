@@ -6,7 +6,7 @@ import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
+import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
 import org.clulab.reach.focusedreading.executable.SimplePath.{args, logger}
 import org.clulab.reach.focusedreading.tracing.AgentRunTrace
 import org.json4s.native.JsonMethods.{pretty, render}
@@ -15,6 +15,7 @@ import scala.collection.mutable
 import com.typesafe.scalalogging.LazyLogging
 import org.sarsamora.actions.Action
 import org.clulab.reach.focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
+import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
 import org.sarsamora.policies._
 
 /**
@@ -39,6 +40,10 @@ object SimplePathRL extends App with LazyLogging{
         //(t(0), t(1), t(2))
         t
     }.toSeq
+
+  // For evaluation purposes
+  // Store a key for each interaction, defined as the pair of elements and the list of pathways where they belong to
+  val interactionsToAnnotate = new mutable.HashMap[Tuple3[String, String, Boolean], mutable.ArrayBuffer[String]]
 
   var (successes, failures, hits) = (0, 0, 0)
   val pathLengths = new mutable.ArrayBuffer[Int]
@@ -108,10 +113,12 @@ object SimplePathRL extends App with LazyLogging{
 
         val path = paths.head
 
+        val pathName = path.mkString(" || ")
+
         this.printEvidence(path, agent, writer)
 
         logger.info("")
-        logger.info("Path: " + path.mkString(" || "))
+        logger.info("Path: " + pathName)
 
 
         // Analysis
@@ -134,6 +141,22 @@ object SimplePathRL extends App with LazyLogging{
           logger.info(s"Type: Alternative")
           "alternative"
         }
+
+
+        // For annotation purposes
+        for(interaction <- path){
+          val key = (interaction.controller.id, interaction.controlled.id, interaction.sign)
+          if(interactionsToAnnotate.contains(key)){
+            interactionsToAnnotate(key) += pathName
+          }
+          else{
+            val value = new mutable.ArrayBuffer[String]()
+            value += pathName
+            interactionsToAnnotate += (key -> value)
+          }
+        }
+        //////////////////////////
+
 
         //serializeItem(path, groundTruth, matchType, agent, new File(s"hits/hit_$ix.json"))
 
@@ -265,4 +288,22 @@ object SimplePathRL extends App with LazyLogging{
 
   writer.close()
 
+  // Write down the annotations
+  // First, translate the interaction pairs to their PK in the SQLite DB
+  // TODO: Parameterize the connection string
+  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite")
+  val mappedInteractions = interactionsToAnnotate.map{
+    case(key, value) =>
+      val id = daIE.getInteractionId(key)
+      id -> value
+  }
+
+  // Generate the lines and write them down
+  val annotationSw = new BufferedWriter(new FileWriter("to_annotate.txt"))
+  mappedInteractions foreach {
+    case (key, value) =>
+      val cols = value.mkString(",")
+      annotationSw.write(s"$key,$cols\n")
+  }
+  annotationSw.close()
 }

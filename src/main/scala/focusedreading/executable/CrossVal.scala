@@ -2,17 +2,16 @@ package focusedreading.executable
 
 import java.io.{File, FileOutputStream, OutputStreamWriter}
 
-import breeze.linalg.{DenseVector, linspace}
-import breeze.plot.{Figure, plot}
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.focusedreading.agents.{PolicySearchAgent, SQLiteSearchAgent, SearchAgent}
+import org.clulab.focusedreading.agents.{RedisSQLiteSearchAgent, SearchAgent}
 import org.clulab.reach.focusedreading.reinforcement_learning.actions._
-import org.sarsamora.environment.Environment
 import org.clulab.reach.focusedreading.reinforcement_learning.environment.SimplePathEnvironment
-import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
-import org.sarsamora.policy_iteration.td.SARSA
 import org.clulab.reach.focusedreading.{Connection, Participant}
 import org.sarsamora.actions.Action
+import org.sarsamora.environment.Environment
+import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
+import org.sarsamora.policy_iteration.td.SARSA
+import org.clulab.focusedreading.agents.PolicySearchAgent
 
 import scala.collection.mutable
 
@@ -35,7 +34,7 @@ object Crossval extends App with LazyLogging {
   val numPapersRead = new mutable.ArrayBuffer[Int]()
   val numQueriesIssued = new mutable.ArrayBuffer[Int]()
 
-  for((trainData, testData) <- slices.take(2)){
+  for((trainData, testData) <- slices){
     // Do training
     val trainer = new Trainer(trainData.toIterator)
     val learntPolicy = trainer.run()
@@ -121,7 +120,8 @@ class Trainer(dataSet:Iterator[Tuple2[String, String]]) {
 
   def run():EpGreedyPolicy = {
     val policyIteration = new SARSA(focusedReadingFabric, 20000, 200, alpha = 0.05, gamma = 0.3)
-    val possibleActions = Set[Action](ExploreQuery(), ExploitQuery(), ExploitEndpoints())
+    // TODO: Put the action choice on a better place
+    val possibleActions = Set[Action]() ++ PolicySearchAgent.usedActions
     val qFunction = new LinearApproximationValues(possibleActions)
     val initialPolicy = new EpGreedyPolicy(0.5, qFunction)
 
@@ -202,7 +202,7 @@ class Tester(dataSet:Iterable[Tuple2[String, String]], policy:EpGreedyPolicy) ex
 
       //val agent = new LuceneReachSearchAgent(participantA, participantB)
       //val agent = new PolicySearchAgent(participantA, participantB, policy)
-      val agent = new SQLiteSearchAgent(participantA, participantB)
+      val agent = new RedisSQLiteSearchAgent(participantA, participantB)
       agent.focusedSearch(participantA, participantB)
 
 

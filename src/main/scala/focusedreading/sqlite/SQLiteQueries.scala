@@ -11,6 +11,35 @@ import org.clulab.reach.focusedreading.{Connection, Participant}
   */
 class SQLiteQueries(path:String) extends LazyLogging{
 
+  /**
+    * Returns the PK of the interaction record for this pair of entities.
+    * This is for annotation purposes
+    * @param key Pair of entities to look for
+    * @return ID column of the Interactions table
+    */
+  def getInteractionId(key: (String, String, Boolean)):Int = {
+    val interactionsCommand =
+      """ SELECT id FROM Interactions WHERE controller = ? AND controlled = ? AND direction = ?
+        |
+      """.stripMargin
+
+    val conn = getConnection
+
+    val cmd = conn.prepareStatement(interactionsCommand)
+
+    cmd.setString(1, key._1)
+    cmd.setString(2, key._2)
+    cmd.setInt(3, if(key._3) 1 else 0)
+
+    val resultSet = cmd.executeQuery()
+
+    val id = resultSet.getInt("id")
+
+    cmd.close
+
+    id
+  }
+
 
   def removeNamespace(id:String):String = {
     val tokens = id.split(":")
