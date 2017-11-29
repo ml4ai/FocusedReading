@@ -20,7 +20,7 @@ object QueryStrategy extends Enumeration{
   val Singleton, Disjunction, Conjunction, Spatial, Cascade = Value
 }
 
-case class Query(val strategy:QueryStrategy.Strategy, val A:Participant, val B:Option[Participant])
+case class Query(strategy:QueryStrategy.Strategy, count:Int, A:Participant, B:Option[Participant])
 
 
 /**
@@ -184,7 +184,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"conjunction:${a.id}:${b.id}"
+    val queryKey = s"conjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -210,7 +210,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binaryDisonjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"disjunction:${a.id}:${b.id}"
+    val queryKey = s"disjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -235,7 +235,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binarySpatialQuery(a: Participant, b: Participant, k: Int, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"spatial:${a.id}:${b.id}:$k"
+    val queryKey = s"spatial:${a.id}:${b.id}:$k:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -260,7 +260,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def singletonQuery(p: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"singleton:${p.id}"
+    val queryKey = s"singleton:${p.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 

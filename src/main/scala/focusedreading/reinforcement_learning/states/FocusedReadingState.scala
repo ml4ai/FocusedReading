@@ -36,8 +36,9 @@ object RankBin extends Enumeration {
   * @param pbIterationIntroduction Iteration # in which PB was introduced to the KB graph
   * @param paUngrounded Whether PA has a grounding ID (not a UAZ id generated autimatically by REACH)
   * @param pbUngrounded Whether PB has a grounding ID (not a UAZ id generated autimatically by REACH)
-  * @param exploreIRScore IR aggregated score of the exploration IR query
-  * @param exploitIRScore IR aggregated score of the exploritation IR query
+  * @param exploreFewIRScores IR scores of the exploration IR query
+  * @param exploreManyIRScores IR scores of the exploration IR query
+  * @param exploitIRScores IR scores of the exploritation IR query
   */
 case class FocusedReadingState(paRank:Double,
                                pbRank:Double,
@@ -49,13 +50,30 @@ case class FocusedReadingState(paRank:Double,
                                pbIterationIntroduction:Int,
                                paUngrounded:Boolean,
                                pbUngrounded:Boolean,
-                               exploreIRScore:Double,
-                               exploitIRScore:Double
+                               exploreFewIRScores:Seq[Float],
+                               exploreManyIRScores:Seq[Float],
+                               exploitIRScores:Seq[Float],
+                               unchangedIterations:Int
                               ) extends State{
+
+  // Aggregate the scores
+  val exploreFew: (Float, Float, Float) = aggregateIRScores(exploreFewIRScores)
+  val exploreMany: (Float, Float, Float) = aggregateIRScores(exploreManyIRScores)
+  val exploit: (Float, Float, Float) = aggregateIRScores(exploitIRScores)
+
+  private def aggregateIRScores(scores:Seq[Float]):(Float, Float, Float) = {
+    if(scores.isEmpty)
+      (0.0f, 0.0f, 0.0f)
+    else{
+      (scores.min,
+        scores.max,
+        scores.sum / scores.size)
+    }
+  }
 
   override def hashCode(): Int = {
     // TODO: Automatically calculate this using reflection
-    s"$paRank-$pbRank-$iteration-$paQueryLogCount-$pbQueryLogCount-$sameComponent-$paIterationIntroduction-$pbIterationIntroduction--$paUngrounded-$pbUngrounded".hashCode
+    s"$paRank-$pbRank-$iteration-$paQueryLogCount-$pbQueryLogCount-$sameComponent-$paIterationIntroduction-$pbIterationIntroduction-$paUngrounded-$pbUngrounded-$unchangedIterations".hashCode
   }
 
   override def equals(obj: scala.Any): Boolean = {
@@ -70,8 +88,10 @@ case class FocusedReadingState(paRank:Double,
         && sameComponent == that.sameComponent
         && paIterationIntroduction == that.paIterationIntroduction
         && pbIterationIntroduction == that.pbIterationIntroduction
-        && exploreIRScore == that.exploitIRScore
-        && exploitIRScore == that.exploitIRScore)
+        && exploreFewIRScores == that.exploreFewIRScores
+        && exploreManyIRScores == that.exploreManyIRScores
+        && exploitIRScores == that.exploitIRScores
+        && unchangedIterations == that.unchangedIterations)
         true
       else
         false
@@ -94,9 +114,17 @@ case class FocusedReadingState(paRank:Double,
       "paIterationIntroduction" -> paIterationIntroduction.toDouble,
       "pbIterationIntroduction" -> pbIterationIntroduction.toDouble,
       "paRank" -> paRank,
-      "pbRank" -> pbRank
-      //"exploreIRScore" -> exploreIRScore,
-      //"exploitIRScore" -> exploitIRScore
+      "pbRank" -> pbRank,
+      "exploreFewIRScore_min" -> exploreFew._1,
+      "exploreFewIRScore_max" -> exploreFew._2,
+      "exploreFewIRScore_mean" -> exploreFew._3,
+      "exploreManyIRScore_min" -> exploreMany._1,
+      "exploreManyIRScore_max" -> exploreMany._2,
+      "exploreManyIRScore_mean" -> exploreMany._3,
+      "exploitIRScore_min" -> exploit._1,
+      "exploitIRScore_max" -> exploit._2,
+      "exploitIRScore_mean" -> exploit._3,
+      "unchangedIterations" -> unchangedIterations
       //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")

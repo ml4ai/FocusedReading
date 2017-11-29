@@ -28,8 +28,11 @@ class SimplePathEnvironment(participantA:Participant, participantB:Participant) 
     (agent.stage: @unchecked) match {
       case FocusedReadingStage.Query =>
         val state = agent.observeState
-        Seq(state, state)
+        // Repeat the state the number of different action sizes available to zip it with the possible actions
+        // This is done because the state is dependent of the action to be chosen, feels incorrect TODO: Double check this is kosher
+        Seq.fill(PolicySearchAgent.usedQueryActions.size)(state)
       case FocusedReadingStage.EndPoints =>
+        // TODO: Is it valid if the state is a function of the action? Verify this is valid
         val exploreState = agent.observeExploreState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
         val exploitState = agent.observeExploitState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
 

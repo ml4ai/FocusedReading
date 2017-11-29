@@ -13,7 +13,9 @@ import org.sarsamora.policies.ActionValueLoader
 
 sealed class FocusedReadingAction() extends Action
 
-case class ExploreQuery() extends FocusedReadingAction
+case class ExploreManyQuery() extends FocusedReadingAction
+
+case class ExploreFewQuery() extends FocusedReadingAction
 
 case class ExploitQuery() extends FocusedReadingAction
 
@@ -45,12 +47,13 @@ class FocusedReadingActionValues extends ActionValueLoader {
   override def loadActionValues(ast:JObject) = {
 
     val coefficients = ast \ "coefficients"
-    val valsExploreQuery = extractCoefficients(coefficients, ExploreQuery())
+    val valsExploreManyQuery = extractCoefficients(coefficients, ExploreManyQuery())
+    val valsExploreFewQuery = extractCoefficients(coefficients, ExploreFewQuery())
     val valsExploitQuery = extractCoefficients(coefficients, ExploitQuery())
     val valsExploreEndpoints = extractCoefficients(coefficients, ExploreEndpoints())
     val valsExploitEndpoints = extractCoefficients(coefficients, ExploitEndpoints())
 
-    val coefficientsMap = Seq[Option[(Action, mutable.HashMap[String, Double])]](valsExploreQuery, valsExploitQuery, valsExploreEndpoints, valsExploitEndpoints).collect{
+    val coefficientsMap = Seq[Option[(Action, mutable.HashMap[String, Double])]](valsExploreManyQuery, valsExploreFewQuery, valsExploitQuery, valsExploreEndpoints, valsExploitEndpoints).collect{
       case Some((name, coeff)) => name -> coeff
     }.toMap
 

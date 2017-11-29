@@ -42,7 +42,7 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   // Follow the cascade query strategy
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Cascade, source, Some(destination))
+                          model: SearchModel) = Query(Cascade, 50, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
 
 
 }
@@ -64,7 +64,7 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
 
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Cascade, source, Some(destination))
+                          model: SearchModel) = Query(Cascade, 50, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
 
 }
 
@@ -74,19 +74,20 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
   */
 object PolicySearchAgent{
   // All the possible actions
-  val usedActions = Seq(ExploitQuery(), ExploreQuery(), ExploitEndpoints(), ExploreEndpoints())
+  val usedActions = Seq(ExploitQuery(), ExploreManyQuery(), ExploreFewQuery(), ExploitEndpoints(), ExploreEndpoints())
 
   // Set to false the actions that you want to ignore
-  val usedQueryActions = usedActions filter {
-    case _:ExploreQuery => true
+  val usedQueryActions: Seq[FocusedReadingAction] = usedActions filter {
+    case _:ExploreManyQuery => true
+    case _:ExploreFewQuery => true
     case _:ExploitQuery => true
     case _ => false
   }
 
   // Set to false the actions that you want to ignore
-  val usedEndpointActions = usedActions filter {
+  val usedEndpointActions: Seq[FocusedReadingAction] = usedActions filter {
     case _:ExploreEndpoints => true
-    case _:ExploitEndpoints => false
+    case _:ExploitEndpoints => true
     case _ => false
   }
 }
@@ -102,7 +103,6 @@ object PolicySearchAgent{
 class PolicySearchAgent(participantA:Participant, participantB:Participant, val policy:Policy) extends SimplePathAgent(participantA, participantB)
   with PolicyParticipantsStrategy
   with RedisIRStrategy
-  //with LuceneIRStrategy
   with SQLIteIEStrategy {
 
 
@@ -181,14 +181,47 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     }
   }
 
+// TODO: Deal with this correctly. In training, the agent shouldn't quit in the endpoints stage. In testing, it will behave like a search agent, just as the baseline
+//  override def failureStopCondition(source: Participant,
+//                                    destination: Participant,
+//                                    model: SearchModel):Boolean = {
+//    // Need to add this condition because I need to account for the two different
+//    stage match {
+//      case FocusedReadingStage.EndPoints => false
+//      case FocusedReadingStage.Query =>{
+//        // TODO: Parameterize these numbers into a configuration file
+//        if(this.iterationNum >= 200)
+//          true
+//        else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
+//          // If the model didn't change, increase the unchanged iterations counter
+//          unchangedIterations += 1
+//          // This line prints twice because in the policy search agent specialization, the process is divided in two stages:
+//          // Endpoints and Query. Each stage takes an iteration
+//          // TODO: Fix this by overriding this method in PolicySearchAgent
+//          logger.info(s"The model didn't change $unchangedIterations times")
+//          if(unchangedIterations >= 10)
+//            true
+//          else
+//            false
+//        }
+//        else {
+//          // Reset the counter of unchanged iterations
+//          unchangedIterations = 0
+//          false
+//        }
+//      }
+//    }
+//
+//  }
+
 
   override def choseQuery(a: Participant,
                           b: Participant,
-                          model: SearchModel) = {
+                          model: SearchModel): Query = {
 
     queryLog += Tuple2(a, b)
 
-    val possibleActions:Seq[Action] = PolicySearchAgent.usedQueryActions//Seq(ExploreQuery(), ExploitQuery())
+    val possibleActions:Seq[Action] = PolicySearchAgent.usedQueryActions
 
     // Create state
     val state = this.observeState
@@ -206,20 +239,22 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   override def observeState:State = {
+
+    // TODO: Parameterize these to a config file
+    val few = 5
+    val many = 50
+
     // Do IR queries
     val (a, b) = queryLog.last
-    val exploreQuery = Query(QueryStrategy.Disjunction, a, Some(b))
-    val exploitQuery = Query(QueryStrategy.Conjunction, a, Some(b))
+    val exploreFewQuery = Query(QueryStrategy.Disjunction, few, a, Some(b))
+    val exploreManyQuery = Query(QueryStrategy.Disjunction, many, a, Some(b))
+    val exploitQuery = Query(QueryStrategy.Conjunction, few, a, Some(b))
 
-    val exploreIRScores = this.informationRetrival(exploreQuery) map (_._2)
+    val exploreFewIRScores = this.informationRetrival(exploreFewQuery) map (_._2)
+    val exploreManyIRScores = this.informationRetrival(exploreFewQuery) map (_._2)
     val exploitIRScores = this.informationRetrival(exploitQuery) map (_._2)
 
-    // Aggregate IR scores
-
-    val meanExploreScore = if(exploreIRScores.size == 0) 0.0 else (exploreIRScores.sum / exploreIRScores.size)
-    val meanExploitScore = if(exploitIRScores.size == 0) 0.0 else (exploitIRScores.sum / exploitIRScores.size)
-
-    fillState(this.model, iterationNum, queryLog, introductions, meanExploreScore, meanExploitScore)
+    fillState(this.model, iterationNum, queryLog, introductions, exploreFewIRScores.toSeq, exploreManyIRScores.toSeq, exploitIRScores.toSeq)
   }
 
   override def getIterationNum: Int = iterationNum
@@ -230,7 +265,9 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   private def fillState(model:SearchModel, iterationNum:Int,
                         queryLog:Seq[(Participant, Participant)],
                         introductions:mutable.Map[Participant, Int],
-                        explorationIRScore:Double, exploitationIRScore:Double):State = {
+                        explorationFewIRScores:Seq[Float],
+                        explorationManyIRScores:Seq[Float],
+                        exploitationIRScores:Seq[Float]):State = {
 
     val (a, b) = queryLog.last
     val log = queryLog flatMap (l => Seq(l._1, l._2))
@@ -258,7 +295,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
     FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
       pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded,
-      pbUngrounded, explorationIRScore, exploitationIRScore)
+      pbUngrounded, explorationFewIRScores, explorationManyIRScores, exploitationIRScores, unchangedIterations)
   }
 
   private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {
@@ -349,11 +386,18 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
 
   private def queryActionToStrategy(action: Action, a: Participant, b: Participant) = {
+
+    // TODO: Parameterize these to a config file
+    val few = 5
+    val many = 50
+
     action match {
       case _: ExploitQuery =>
-        Query(Conjunction, a, Some(b))
-      case _: ExploreQuery =>
-        Query(Disjunction, a, Some(b))
+        Query(Conjunction, few, a, Some(b))
+      case _: ExploreManyQuery =>
+        Query(Disjunction, many, a, Some(b))
+      case _: ExploreFewQuery =>
+        Query(Disjunction, many, a, Some(b))
       case _ =>
         throw new RuntimeException("Got an invalid action type for the query stage")
     }

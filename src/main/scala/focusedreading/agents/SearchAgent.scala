@@ -188,6 +188,7 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
 
   var (nodesCount, edgesCount) = (0, 0)
   var (prevNodesCount, prevEdgesCount) = (0, 0)
+  var unchangedIterations = 0
 
   /**
     * Succeeds when at least one path is present betwen source and destination. If it exists, we can find it efficiently
@@ -217,15 +218,26 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
   override def failureStopCondition(source: Participant,
                                     destination: Participant,
                                     model: SearchModel):Boolean = {
-    // TODO: Parameterize this number into a configuration file
-    if(this.iterationNum >= 10)
+    // TODO: Parameterize these numbers into a configuration file
+    if(this.iterationNum >= 100)
       true
-    else if(iterationNum > 0 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
-      logger.info("The model didn't change.")
-      true
+    else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
+      // If the model didn't change, increase the unchanged iterations counter
+      unchangedIterations += 1
+      // This line prints twice because in the policy search agent specialization, the process is divided in two stages:
+      // Endpoints and Query. Each stage takes an iteration
+      // TODO: Fix this by overriding this method in PolicySearchAgent
+      logger.info(s"The model didn't change $unchangedIterations times")
+      if(unchangedIterations >= 10)
+        true
+      else
+        false
     }
-    else
+    else {
+      // Reset the counter of unchanged iterations
+      unchangedIterations = 0
       false
+    }
   }
 
   /**
@@ -250,44 +262,3 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
   }
 
 }
-
-//abstract class MultiplePathsAgent(participantA:Participant, participantB:Participant, val maxIdleIterations:Int = 10)
-//  extends SimplePathAgent(participantA, participantB){
-//
-//  var noChangeIterations = 0
-//  var prevSolution:Seq[Seq[Connection]] = Seq()
-//
-//  private def sameAs(a:Seq[Seq[Connection]], b:Seq[Seq[Connection]]):Boolean = {
-//    if(a.size != b.size)
-//      false
-//    else{
-//      true
-//    }
-//  }
-//
-//  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel) = {
-//    val allPaths = model.allPaths(source, destination).toSeq
-//
-//    if(sameAs(allPaths, prevSolution))
-//      noChangeIterations += 1
-//    else
-//      noChangeIterations = 0
-//
-//    if(allPaths.nonEmpty && (allPaths.size >= 10 || this.noChangeIterations == maxIdleIterations))
-//      Some(allPaths)
-//    else
-//      None
-//  }
-//
-//  override def failureStopCondition(source: Participant, destination: Participant, model: SearchModel): Boolean = {
-//    if(this.noChangeIterations >= 10)
-//      true
-//    else if((nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
-//      logger.info("The model didn't change.")
-//      true
-//    }
-//    else
-//      false
-//  }
-//
-//}
