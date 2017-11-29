@@ -1,20 +1,21 @@
-package org.clulab.focusedreading.agents
+package focusedreading.agents
 
 import java.io.{FileOutputStream, OutputStreamWriter}
 
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
-import org.clulab.reach.focusedreading.ir.QueryStrategy._
-import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, SQLIRStrategy, RedisIRStrategy, Query, QueryStrategy}
-import org.clulab.reach.focusedreading.models._
-import org.clulab.reach.focusedreading.reinforcement_learning.actions._
-import org.clulab.reach.focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
+import focusedreading.pc_strategies.{MostConnectedParticipantsStrategy, PolicyParticipantsStrategy}
+import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
+import focusedreading.ir.QueryStrategy._
+import focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
+import focusedreading.models._
+import focusedreading.reinforcement_learning.actions._
+import focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
-import org.clulab.reach.focusedreading._
-import org.clulab.focusedreading.agents._
-import org.clulab.focusedreading.agents.FocusedReadingStage._
+import focusedreading._
+import focusedreading.agents._
+import focusedreading.agents.FocusedReadingStage._
 
 import scala.collection.mutable
 

@@ -1,12 +1,12 @@
-package org.clulab.reach.focusedreading.tracing
+package focusedreading.tracing
 
 import java.text.SimpleDateFormat
 
-import org.clulab.reach.focusedreading.{Connection, Participant}
+import focusedreading.{Connection, Participant}
 
 import scalax.collection.mutable.Graph
 import scalax.collection.edge.LDiEdge
-import org.clulab.reach.focusedreading.ir.QueryStrategy.Strategy
+import focusedreading.ir.QueryStrategy.Strategy
 import org.clulab.utils.Serializer
 import java.util.Date
 import java.nio.file.Path

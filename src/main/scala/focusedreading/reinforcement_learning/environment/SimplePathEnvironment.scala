@@ -1,13 +1,13 @@
-package org.clulab.reach.focusedreading.reinforcement_learning.environment
+package focusedreading.reinforcement_learning.environment
 
-import org.clulab.reach.focusedreading.Participant
-import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent}
+import focusedreading.Participant
+import focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent}
 import org.sarsamora.environment.Environment
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.DummyPolicy
 import org.sarsamora.states.State
-import org.clulab.focusedreading.agents.FocusedReadingStage
-import org.clulab.reach.focusedreading.reinforcement_learning.actions._
+import focusedreading.agents.FocusedReadingStage
+import focusedreading.reinforcement_learning.actions._
 
 
 /**

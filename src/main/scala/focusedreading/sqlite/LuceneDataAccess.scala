@@ -1,12 +1,12 @@
-package org.clulab.reach.focusedreading.sqlite
+package focusedreading.sqlite
 
 import java.io.File
 import java.sql._
 
 import com.typesafe.scalalogging.LazyLogging
 import jdk.internal.org.objectweb.asm.util.Printer
-import org.clulab.reach.focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy}
-import org.clulab.reach.focusedreading.{Connection => _, _}
+import focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy}
+import focusedreading.{Connection => _, _}
 
 import scala.util.{Failure, Success, Try}
 

@@ -1,8 +1,8 @@
 package focusedreading.executable.cross_validation
 
-import org.clulab.focusedreading.agents.PolicySearchAgent
-import org.clulab.reach.focusedreading.Participant
-import org.clulab.reach.focusedreading.reinforcement_learning.environment.SimplePathEnvironment
+import focusedreading.agents.PolicySearchAgent
+import focusedreading.Participant
+import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}

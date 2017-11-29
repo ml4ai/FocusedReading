@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.reinforcement_learning.actions
+package focusedreading.reinforcement_learning.actions
 
 /**
   * Created by enrique on 17/04/17.

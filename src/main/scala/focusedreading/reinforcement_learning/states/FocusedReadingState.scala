@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.reinforcement_learning.states
+package focusedreading.reinforcement_learning.states
 
 /**
   * Created by enrique on 03/31/17.

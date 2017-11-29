@@ -1,8 +1,8 @@
 package focusedreading.executable.cross_validation
 
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.focusedreading.agents.{PolicySearchAgent, SearchAgent}
-import org.clulab.reach.focusedreading.{Connection, Participant}
+import focusedreading.agents.{PolicySearchAgent, SearchAgent}
+import focusedreading.{Connection, Participant}
 import org.sarsamora.policies.EpGreedyPolicy
 
 import scala.collection.mutable

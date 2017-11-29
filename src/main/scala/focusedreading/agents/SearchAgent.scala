@@ -1,11 +1,12 @@
-package org.clulab.focusedreading.agents
+package focusedreading.agents
 
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.ie.IEStrategy
-import org.clulab.reach.focusedreading.ir.{IRStrategy, Query}
-import org.clulab.reach.focusedreading.models._
-import org.clulab.reach.focusedreading.tracing.IterativeStep
-import org.clulab.reach.focusedreading.{Connection, Participant, ParticipantChoosingStrategy}
+import focusedreading.pc_strategies.ParticipantChoosingStrategy
+import focusedreading.ie.IEStrategy
+import focusedreading.ir.{IRStrategy, Query}
+import focusedreading.models._
+import focusedreading.tracing.IterativeStep
+import focusedreading.{Connection, Participant}
 
 import scala.collection.mutable
 import scalax.collection.edge.LDiEdge

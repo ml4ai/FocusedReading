@@ -1,7 +1,7 @@
-package org.clulab.reach.focusedreading.ie
+package focusedreading.ie
 
-import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
-import org.clulab.reach.focusedreading.{Connection, Participant}
+import focusedreading.sqlite.SQLiteQueries
+import focusedreading.{Connection, Participant}
 
 /**
   * Created by enrique on 12/03/17.

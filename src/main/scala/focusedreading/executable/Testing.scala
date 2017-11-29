@@ -1,22 +1,17 @@
 package focusedreading.executable
 
-import java.io.{BufferedWriter, File, FileOutputStream, FileWriter}
-import java.io._
+import java.io.{BufferedWriter, FileOutputStream, FileWriter, _}
 import java.nio.file.Paths
 
-import org.apache.commons.io.FileUtils
-import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
-import focusedreading.executable.Baseline.{args, logger}
-import org.clulab.reach.focusedreading.tracing.AgentRunTrace
-import org.json4s.native.JsonMethods.{pretty, render}
+import com.typesafe.scalalogging.LazyLogging
+import focusedreading.agents.{PolicySearchAgent, SearchAgent}
+import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
+import focusedreading.sqlite.SQLiteQueries
+import focusedreading.tracing.AgentRunTrace
+import focusedreading.{Connection, Participant}
+import org.sarsamora.policies._
 
 import scala.collection.mutable
-import com.typesafe.scalalogging.LazyLogging
-import org.sarsamora.actions.Action
-import org.clulab.reach.focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
-import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
-import org.sarsamora.policies._
 
 /**
   * Created by enrique on 03/04/17.

@@ -1,6 +1,6 @@
-package org.clulab.reach.focusedreading.models
+package focusedreading.models
 
-import org.clulab.reach.focusedreading.{Participant, Connection}
+import focusedreading.{Participant, Connection}
 
 /**
   * Created by enrique on 08/03/17.

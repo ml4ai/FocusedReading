@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.ir
+package focusedreading.ir
 
 import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.Paths

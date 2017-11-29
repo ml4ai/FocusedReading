@@ -1,19 +1,17 @@
 package focusedreading.executable
 
-import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.focusedreading.agents._
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Paths
 
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.commons.io.FileUtils
+import focusedreading.agents._
+import focusedreading.tracing.AgentRunTrace
+import focusedreading.{Connection, Participant}
 import org.json4s.JsonDSL._
-import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import scala.collection.JavaConverters._
-import org.json4s.native.JsonMethods._
-import org.apache.commons.io.{FileUtils, FilenameUtils}
-import org.clulab.reach.focusedreading.tracing.AgentRunTrace
-
 import scala.collection.mutable
 
 /**
