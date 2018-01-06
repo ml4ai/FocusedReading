@@ -14,10 +14,16 @@ import org.json4s.native.JsonMethods._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.typesafe.config.ConfigFactory
+
 /**
   * Created by enrique on 12/03/17.
   */
 object Baseline extends App with LazyLogging{
+
+    // Read the configuration parameters
+    // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
+    val config = ConfigFactory.load()
 
 
     def getParticipants(path:List[Connection]):List[String] = {

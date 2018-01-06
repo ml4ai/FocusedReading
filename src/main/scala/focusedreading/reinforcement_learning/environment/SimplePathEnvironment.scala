@@ -47,6 +47,6 @@ class SimplePathEnvironment(participantA:Participant, participantB:Participant) 
     }
   }
 
-  override def finishedEpisode:Boolean = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model)
+  override def finishedEpisode:Boolean = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)
 
 }

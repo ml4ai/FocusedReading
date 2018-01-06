@@ -19,7 +19,7 @@ object RankBin extends Enumeration {
     values.map{
       v =>
         val is = if(v == b) 1.0 else 0.0
-        (s"$prefix-${v.toString}" -> is)
+        s"$prefix-${v.toString}" -> is
     }.toMap
   }
 }

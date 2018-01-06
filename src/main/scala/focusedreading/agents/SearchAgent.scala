@@ -105,7 +105,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
     }
     // Repeat the process until it is finished
-    while(!hasFinished(source, destination, this.model))
+    while(!hasFinished(source, destination, this.model, true))
     logger.info(s"Focused search finished after $iterationNum iterations")
   }
 
@@ -116,12 +116,12 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
     * @param model KB graph grown during the FR process
     * @return whether the search process has finished
     */
-  def hasFinished(source:Participant, destination:Participant, model:SearchModel):Boolean = {
+  def hasFinished(source:Participant, destination:Participant, model:SearchModel, mutate:Boolean):Boolean = {
     // If there is a success stop condition, defined below, then stop the process
     if(successStopCondition(source, destination, model).isDefined)
       true
     // If there is a failure stop condition, defined below, then stop the process
-    else if(failureStopCondition(source, destination, model))
+    else if(failureStopCondition(source, destination, model, mutate))
       true
     // If there's no stop condition at all, don't stop the process
     else
@@ -147,11 +147,13 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
     * @param source node in model
     * @param destination node in model
     * @param model KB graph grown during the search process
+    * @param mutate Whether to tick up the iteration number
     * @return Whether the FR process has failed
     */
   def failureStopCondition(source:Participant,
                            destination:Participant,
-                           model:SearchModel):Boolean
+                           model:SearchModel,
+                           mutate:Boolean):Boolean
 
 
   // TODO: Write docstring for this method
@@ -213,21 +215,23 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
     * @param source node in model
     * @param destination node in model
     * @param model KB graph grown during the search process
+    * @param persist Whether to tick up the iteration number
     * @return Whether the FR process has failed
     */
   override def failureStopCondition(source: Participant,
                                     destination: Participant,
-                                    model: SearchModel):Boolean = {
+                                    model: SearchModel,
+                                    persist: Boolean):Boolean = {
     // TODO: Parameterize these numbers into a configuration file
     if(this.iterationNum >= 100)
       true
     else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
       // If the model didn't change, increase the unchanged iterations counter
-      unchangedIterations += 1
-      // This line prints twice because in the policy search agent specialization, the process is divided in two stages:
-      // Endpoints and Query. Each stage takes an iteration
-      // TODO: Fix this by overriding this method in PolicySearchAgent
-      logger.info(s"The model didn't change $unchangedIterations times")
+      if(persist) {
+        unchangedIterations += 1
+
+        logger.info(s"The model didn't change $unchangedIterations times")
+      }
       if(unchangedIterations >= 10)
         true
       else

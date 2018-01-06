@@ -76,13 +76,13 @@ object Training extends App {
   val epochs = 30
   val numEpisodes = 2000 //pairs.size * epochs
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 50, 0.02)
+  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 50, 0.0001)
   // TODO: Put this on a better place
   val possibleActions:Set[Action] = Set[Action]() ++ PolicySearchAgent.usedActions
   val qFunction = new LinearApproximationValues(possibleActions)
 
   // Decaying epsilon
-  val epsilon = 0.4
+  val epsilon = 0.15
 //  val epsilonDecrease = (epsilon-0.01)/(numEpisodes/2.0)
 //  val eps = (0 to (numEpisodes/2)).toStream.map(i => epsilon-(i*epsilonDecrease)).iterator ++ Stream.continually(0.01)
   val eps = Decays.exponentialDecay(epsilon, 0.1, pairs.size*(epochs-2), pairs.size).iterator

@@ -368,12 +368,12 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
 
     // Return the observed reward
-    if(!this.hasFinished(participantA, participantB, model)){
+    if(!this.hasFinished(participantA, participantB, model, true)){
       // If this episode hasn't finished
       -0.05
     }
     else{
-      // If finished successfuly
+      // If finished successfully
       val uniquePapers = this.papersRead.toSet.size
       successStopCondition(participantA, participantB, model) match{
         case Some(p) =>

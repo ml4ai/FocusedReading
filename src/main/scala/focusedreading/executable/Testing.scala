@@ -10,6 +10,7 @@ import focusedreading.sqlite.SQLiteQueries
 import focusedreading.tracing.AgentRunTrace
 import focusedreading.{Connection, Participant}
 import org.sarsamora.policies._
+import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable
 
@@ -17,6 +18,9 @@ import scala.collection.mutable
   * Created by enrique on 03/04/17.
   */
 object Testing extends App with LazyLogging{
+
+  // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
+  val config = ConfigFactory.load()
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
@@ -51,9 +55,9 @@ object Testing extends App with LazyLogging{
 
   /***
     * Prints the sentences that back the evidence found
-    * @param path
+    * @param path Connections that comprise the path
     */
-  def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter) = {
+  def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter): Unit = {
     val evidence:Seq[Iterable[String]] = path map agent.getEvidence
 
     writer.write(s"${path.map(_.toString(humanFriendly = true)).mkString(" - ")}\n")
@@ -235,7 +239,7 @@ object Testing extends App with LazyLogging{
   }
 
 
-  val averageRuntime = (times.sum / times.size)
+  val averageRuntime = times.sum / times.size
 
   // Store info for bootstrapping
 
@@ -279,14 +283,14 @@ object Testing extends App with LazyLogging{
 
   bootstrapLines foreach osw.write
 
-  osw.close
+  osw.close()
 
   writer.close()
 
   // Write down the annotations
   // First, translate the interaction pairs to their PK in the SQLite DB
-  // TODO: Parameterize the connection string
-  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite")
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val daIE = new SQLiteQueries(sqlitePath)
   val mappedInteractions = interactionsToAnnotate.map{
     case(key, value) =>
       val id = daIE.getInteractionId(key)

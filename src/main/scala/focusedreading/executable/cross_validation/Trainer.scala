@@ -25,7 +25,6 @@ class Trainer(dataSet:Iterator[Tuple2[String, String]]) {
 
   def run():EpGreedyPolicy = {
     val policyIteration = new SARSA(focusedReadingFabric, 20000, 200, alpha = 0.05, gamma = 0.3)
-    // TODO: Put the action choice on a better place
     val possibleActions = Set[Action]() ++ PolicySearchAgent.usedActions
     val qFunction = new LinearApproximationValues(possibleActions)
     val initialPolicy = new EpGreedyPolicy(0.5, qFunction)
