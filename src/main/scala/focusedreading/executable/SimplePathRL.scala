@@ -306,4 +306,11 @@ object SimplePathRL extends App with LazyLogging{
       annotationSw.write(s"$key,$cols\n")
   }
   annotationSw.close()
+
+  val papersSw = new BufferedWriter(new FileWriter("read_paper_ids.txt"))
+  papers.toSet foreach {
+    paperId:String =>
+      papersSw.write(s"$paperId\n")
+  }
+  papersSw.close()
 }
