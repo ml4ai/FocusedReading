@@ -2,6 +2,7 @@ package focusedreading.agents
 
 import java.io.{FileOutputStream, OutputStreamWriter}
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.pc_strategies.{MostConnectedParticipantsStrategy, PolicyParticipantsStrategy}
 import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
@@ -16,6 +17,7 @@ import org.sarsamora.states.State
 import focusedreading._
 import focusedreading.agents._
 import focusedreading.agents.FocusedReadingStage._
+import scala.collection.JavaConversions._
 
 import scala.collection.mutable
 
@@ -75,20 +77,30 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
 object PolicySearchAgent{
   // All the possible actions
   val usedActions = Seq(ExploitQuery(), ExploreManyQuery(), ExploreFewQuery(), ExploitEndpoints(), ExploreEndpoints())
+  val config = ConfigFactory.load()
+  val elements = config.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
-  // Set to false the actions that you want to ignore
-  val usedQueryActions: Seq[FocusedReadingAction] = usedActions filter {
-    case _:ExploreManyQuery => true
-    case _:ExploreFewQuery => true
-    case _:ExploitQuery => true
-    case _ => false
+  def getActiveActions:Set[Action] = getActiveEndpointActions ++ getActiveQueryActions
+
+  def getActiveEndpointActions:Set[Action] = {
+
+    val activeActions:Set[Action] = elements.collect{
+      case "ExploitEndpoints" => ExploitEndpoints()
+      case "ExploreEndpoints" => ExploreEndpoints()
+    }
+
+    activeActions
   }
 
-  // Set to false the actions that you want to ignore
-  val usedEndpointActions: Seq[FocusedReadingAction] = usedActions filter {
-    case _:ExploreEndpoints => true
-    case _:ExploitEndpoints => true
-    case _ => false
+  def getActiveQueryActions:Set[Action] = {
+
+    val activeActions:Set[Action] = elements.collect{
+      case "ExploitQuery" => ExploitQuery()
+      case "ExploreManyQuery" => ExploreManyQuery()
+      case "ExploreFewQuery" => ExploreFewQuery()
+    }
+
+    activeActions
   }
 }
 
@@ -116,6 +128,10 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
   this.introductions += participantA -> 0
   this.introductions += participantB -> 0
+
+  val configuration = ConfigFactory.load()
+  val fewPapers:Int = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
+  val manyPapers:Int = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
   ////////////
 
   override def choseEndPoints(source: Participant, destination: Participant,
@@ -221,7 +237,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
     queryLog += Tuple2(a, b)
 
-    val possibleActions:Seq[Action] = PolicySearchAgent.usedQueryActions
+    val possibleActions:Seq[Action] = PolicySearchAgent.getActiveQueryActions.toSeq
 
     // Create state
     val state = this.observeState
@@ -258,8 +274,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   override def getIterationNum: Int = iterationNum
-
-  override def getUsedActions: Seq[Action] = PolicySearchAgent.usedEndpointActions
 
   // Auxiliary methods
   private def fillState(model:SearchModel, iterationNum:Int,
@@ -387,17 +401,13 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
   private def queryActionToStrategy(action: Action, a: Participant, b: Participant) = {
 
-    // TODO: Parameterize these to a config file
-    val few = 5
-    val many = 50
-
     action match {
       case _: ExploitQuery =>
-        Query(Conjunction, few, a, Some(b))
+        Query(Conjunction, fewPapers, a, Some(b))
       case _: ExploreManyQuery =>
-        Query(Disjunction, many, a, Some(b))
+        Query(Disjunction, manyPapers, a, Some(b))
       case _: ExploreFewQuery =>
-        Query(Disjunction, many, a, Some(b))
+        Query(Disjunction, manyPapers, a, Some(b))
       case _ =>
         throw new RuntimeException("Got an invalid action type for the query stage")
     }
@@ -436,8 +446,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   }
 
   def possibleActions(): Seq[Action] = (stage: @unchecked) match {
-    case FocusedReadingStage.EndPoints => PolicySearchAgent.usedEndpointActions
-    case FocusedReadingStage.Query => PolicySearchAgent.usedQueryActions
+    case FocusedReadingStage.EndPoints => PolicySearchAgent.getActiveEndpointActions.toSeq
+    case FocusedReadingStage.Query => PolicySearchAgent.getActiveQueryActions.toSeq
   }
   /////////////////
 

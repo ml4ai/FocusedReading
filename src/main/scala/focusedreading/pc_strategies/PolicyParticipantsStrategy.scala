@@ -1,6 +1,7 @@
 package focusedreading.pc_strategies
 
 import focusedreading.Participant
+import focusedreading.agents.PolicySearchAgent
 import focusedreading.models.SearchModel
 import focusedreading.reinforcement_learning.actions.{ExploitEndpoints, ExploreEndpoints}
 import org.sarsamora.actions.Action
@@ -15,7 +16,6 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   // Abstract members
   def observeState:State
   def getIterationNum:Int
-  def getUsedActions:Seq[Action]
   val policy:Policy
   var lastActionChosen:Option[Action] = None
   val chosenEndpointsLog = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]
@@ -39,7 +39,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
   protected val exploreChooser = new {} with MostConnectedParticipantsStrategy {}
 
-  private def possibleActions:Seq[Action] = getUsedActions//Seq(ExploreEndpoints(), ExploitEndpoints())
+  //private def possibleActions:Seq[Action] = getUsedActions//Seq(ExploreEndpoints(), ExploitEndpoints())
 
   private def peekState(a:Participant, b:Participant):State = {
     this.queryLog += Tuple2(a, b)
@@ -111,7 +111,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
     chosenEndpointsLog += Tuple2(exploreEndpoints, exploitEndpoints)
 
 
-    val states = possibleActions map {
+    val states = PolicySearchAgent.getActiveEndpointActions map {
       case _:ExploreEndpoints =>
         exploreState
       case _:ExploitEndpoints =>
@@ -120,7 +120,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
 
     // Choose the action
-    val (_, action) = policy.selectAction(states, possibleActions)
+    val (_, action) = policy.selectAction(states.toSeq, PolicySearchAgent.getActiveEndpointActions.toSeq)
 
     lastActionChosen = Some(action)
 

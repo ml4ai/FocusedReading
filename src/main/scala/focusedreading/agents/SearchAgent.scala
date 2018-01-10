@@ -1,5 +1,6 @@
 package focusedreading.agents
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.pc_strategies.ParticipantChoosingStrategy
 import focusedreading.ie.IEStrategy
@@ -35,6 +36,10 @@ object FocusedReadingStage extends Enumeration{
   *  - ParticipantChoosingStrategy: Specifies how to implement the strategies to chose endpoints to perform IR
   */
 trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with ParticipantChoosingStrategy {
+
+  val mdpConfig = ConfigFactory.load().getConfig("MDP")
+  val maxIterations = mdpConfig.getInt("maxIterations")
+  val maxUnchangedIterations = mdpConfig.getInt("maxUnchangedIterations")
 
   // This is the KB graph which will be grown iteratively. This is an abstract field and must be implemented on the
   // concrete class inheriting the trait
@@ -157,6 +162,13 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
 
   // TODO: Write docstring for this method
+  /**
+    * Select a query strategy anchored on the parameters
+    * @param source
+    * @param destination
+    * @param model
+    * @return
+    */
   def choseQuery(source:Participant, destination:Participant, model:SearchModel):Query
 
   /**
@@ -223,7 +235,7 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
                                     model: SearchModel,
                                     persist: Boolean):Boolean = {
     // TODO: Parameterize these numbers into a configuration file
-    if(this.iterationNum >= 100)
+    if(this.iterationNum >= maxIterations)
       true
     else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
       // If the model didn't change, increase the unchanged iterations counter
@@ -232,7 +244,7 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
 
         logger.info(s"The model didn't change $unchangedIterations times")
       }
-      if(unchangedIterations >= 10)
+      if(unchangedIterations >= maxUnchangedIterations)
         true
       else
         false

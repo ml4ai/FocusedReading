@@ -2,6 +2,7 @@ package focusedreading.executable
 
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
+import com.typesafe.config.ConfigFactory
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
@@ -17,9 +18,13 @@ import org.sarsamora.{Decays, scalaRand}
 
 object Training extends App {
 
-  // The first argument is the input file
+  val config = ConfigFactory.load()
 
-  val pairs = io.Source.fromFile(args(0)).getLines
+  val trainingConfig = config.getConfig("training")
+
+  val inputPath = trainingConfig.getString("inputFile")
+
+  val pairs = io.Source.fromFile(inputPath).getLines
     .map{
       s =>
         val t = s.split("\t").toSeq
@@ -73,19 +78,22 @@ object Training extends App {
   }
 
 
-  val epochs = 30
-  val numEpisodes = 2000 //pairs.size * epochs
+  val epochs = trainingConfig.getInt("epochs")
+  val numEpisodes = trainingConfig.getInt("maxEpisodes") //pairs.size * epochs
+  val burnInEpisodes = trainingConfig.getInt("burnInEpisodes")
+  val learningRate = trainingConfig.getDouble("learningRate")
+  val decay = trainingConfig.getDouble("decayParameter")
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, 50, 0.0001)
-  // TODO: Put this on a better place
-  val possibleActions:Set[Action] = Set[Action]() ++ PolicySearchAgent.usedActions
-  val qFunction = new LinearApproximationValues(possibleActions)
+  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, burnInEpisodes, learningRate, decay)
+  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
+  val qFunction = new LinearApproximationValues(activeActions)
 
   // Decaying epsilon
-  val epsilon = 0.15
+  val epsilon = trainingConfig.getConfig("epsilon").getDouble("initial")
+  val lowerBound = trainingConfig.getConfig("epsilon").getDouble("lowerBound")
 //  val epsilonDecrease = (epsilon-0.01)/(numEpisodes/2.0)
 //  val eps = (0 to (numEpisodes/2)).toStream.map(i => epsilon-(i*epsilonDecrease)).iterator ++ Stream.continually(0.01)
-  val eps = Decays.exponentialDecay(epsilon, 0.1, pairs.size*(epochs-2), pairs.size).iterator
+  val eps = Decays.exponentialDecay(epsilon, lowerBound, pairs.size*(epochs-2), pairs.size).iterator
   ///////////////////
   val initialPolicy = new EpGreedyPolicy(eps, qFunction)
 
@@ -93,7 +101,9 @@ object Training extends App {
 
   // Store the policy somewhere
   // Serializer.save(learntPolicy, "learnt_policy.ser")
-  learntPolicy.save("learnt_policy.json")
+
+  val policyPath = trainingConfig.getString("policyFile")
+  learntPolicy.save(policyPath)
 
 //  val steps = policyIteration.controlCount
 //  val coefficients = qFunction.coefficients.toSeq

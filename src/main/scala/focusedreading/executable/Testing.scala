@@ -21,6 +21,8 @@ object Testing extends App with LazyLogging{
 
   // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
   val config = ConfigFactory.load()
+  val testingConfig = config.getConfig("testing")
+  val outputConfig = testingConfig.getConfig("output")
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
@@ -31,8 +33,10 @@ object Testing extends App with LazyLogging{
   }
 
 
-  // The first argument is the input file
-  val dataSet:Iterable[Seq[String]] = io.Source.fromFile(args(0)).getLines
+
+  val inputPath = testingConfig.getString("inputFile")
+
+  val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
     .map{
       s =>
         val t = s.split("\t").toSeq
@@ -84,7 +88,7 @@ object Testing extends App with LazyLogging{
 
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
 
-  val writer = new OutputStreamWriter(new FileOutputStream("evidence.txt"))
+  val writer = new OutputStreamWriter(new FileOutputStream(outputConfig.getString("evidence")))
 
   for((datum, ix) <- dataSet.zipWithIndex){
 
@@ -98,7 +102,8 @@ object Testing extends App with LazyLogging{
     logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
-    val policy = Policy.loadPolicy("learnt_policy.json", valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
+    val policyPath = testingConfig.getString("policyFile")
+    val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
     val agent = new PolicySearchAgent(participantA, participantB, policy)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
@@ -279,7 +284,7 @@ object Testing extends App with LazyLogging{
   logger.info(s"Same outcome: $same")
   logger.info(s"Different outcome: $different")
 
-  val osw = new BufferedWriter(new FileWriter("rl_bootstrap.txt"))
+  val osw = new BufferedWriter(new FileWriter(outputConfig.getString("bootstrap")))
 
   bootstrapLines foreach osw.write
 
@@ -298,7 +303,7 @@ object Testing extends App with LazyLogging{
   }
 
   // Generate the lines and write them down
-  val annotationSw = new BufferedWriter(new FileWriter("to_annotate.txt"))
+  val annotationSw = new BufferedWriter(new FileWriter(outputConfig.getString("annotations")))
   mappedInteractions foreach {
     case (key, value) =>
       val cols = value.mkString(",")

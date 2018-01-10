@@ -2,6 +2,7 @@ package focusedreading.ie
 
 import java.io.File
 
+import com.typesafe.config.{Config, ConfigFactory}
 import org.clulab.odin.{EventMention, Mention}
 import org.clulab.reach.PaperReader
 import focusedreading.ir.LuceneQueries
@@ -20,6 +21,10 @@ import scala.collection.parallel.ForkJoinTaskSupport
   * Created by enrique on 12/03/17.
   */
 trait REACHIEStrategy extends IEStrategy {
+
+  val config: Config = ConfigFactory.load()
+
+
 
   val reachOutputDir = "/work/enoriega/fillblanks/annotations"
   val taskSupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(20))
@@ -313,7 +318,9 @@ trait REACHIEStrategy extends IEStrategy {
 
   override def informationExtraction(pmcids: Iterable[String]) = {
 
-    val luceneQuerier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene") // TODO: Clean up this and implement it correctly
+    val indexPath = config.getConfig("lucene").getString("annotationsIndex")
+
+    val luceneQuerier = new LuceneQueries(indexPath)
 
     val paperSet = pmcids.map(p => new File(luceneQuerier.nxmlDir, s"$p.nxml").getAbsolutePath)
     logger.info(s"Query returned ${paperSet.size} hits")
