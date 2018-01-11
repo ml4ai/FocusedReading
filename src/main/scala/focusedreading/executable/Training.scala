@@ -24,27 +24,30 @@ object Training extends App {
 
   val inputPath = trainingConfig.getString("inputFile")
 
-  val pairs = io.Source.fromFile(inputPath).getLines
+
+  val trainingData = io.Source.fromFile(inputPath).getLines
     .map{
       s =>
         val t = s.split("\t").toSeq
         //(t(0), t(1), t(2))
-        (t.head, t.last)
+        ((t.head, t.last), t)
     }.toList
 
-  def randomizedPairs = {
-    scalaRand.shuffle(pairs)
+  def randomizedData = {
+    scalaRand.shuffle(trainingData)
   }
 
-  val dataSet:Iterator[Tuple2[String, String]] = Iterator.continually(randomizedPairs).flatten
+  val dataSet:Iterator[Tuple2[(String, String), Seq[String]]] = Iterator.continually(randomizedData).flatten
 
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
-      val episode = dataSet.next
-      val participantA = Participant("", episode._1)
-      val participantB = Participant("", episode._2)
+      val episodeData = dataSet.next
+      val (pair, sequence) = episodeData
+      val participantA = Participant("", pair._1)
+      val participantB = Participant("", pair._2)
+      val reference = sequence map (p => Participant("", p))
 
-      Some(new SimplePathEnvironment(participantA, participantB))
+      Some(new SimplePathEnvironment(participantA, participantB, reference))
     }
     else
       None
@@ -93,7 +96,7 @@ object Training extends App {
   val lowerBound = trainingConfig.getConfig("epsilon").getDouble("lowerBound")
 //  val epsilonDecrease = (epsilon-0.01)/(numEpisodes/2.0)
 //  val eps = (0 to (numEpisodes/2)).toStream.map(i => epsilon-(i*epsilonDecrease)).iterator ++ Stream.continually(0.01)
-  val eps = Decays.exponentialDecay(epsilon, lowerBound, pairs.size*(epochs-2), pairs.size).iterator
+  val eps = Decays.exponentialDecay(epsilon, lowerBound, trainingData.size*(epochs-2), trainingData.size).iterator
   ///////////////////
   val initialPolicy = new EpGreedyPolicy(eps, qFunction)
 

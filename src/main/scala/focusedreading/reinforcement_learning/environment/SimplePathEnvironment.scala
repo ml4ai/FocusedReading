@@ -13,9 +13,9 @@ import focusedreading.reinforcement_learning.actions._
 /**
   * Created by enrique on 30/03/17.
   */
-class SimplePathEnvironment(participantA:Participant, participantB:Participant) extends Environment {
+class SimplePathEnvironment(participantA:Participant, participantB:Participant, referencePath:Seq[Participant]) extends Environment {
 
-  val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy())
+  val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy(), Some(referencePath))
 
   override def possibleActions(): Seq[Action] = agent.possibleActions()
 

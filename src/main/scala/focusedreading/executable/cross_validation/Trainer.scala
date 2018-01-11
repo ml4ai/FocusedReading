@@ -8,16 +8,17 @@ import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
 import org.sarsamora.policy_iteration.td.SARSA
 
-class Trainer(dataSet:Iterator[Tuple2[String, String]]) {
+class Trainer(dataSet:Iterator[Tuple2[(String, String), Array[String]]]) {
 
 
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
-      val episode = dataSet.next
-      val participantA = Participant("", episode._1)
-      val participantB = Participant("", episode._2)
+      val (pair, sequence) = dataSet.next
+      val participantA = Participant("", pair._1)
+      val participantB = Participant("", pair._2)
+      val referencePath = sequence map (p=> Participant("", p))
 
-      Some(new SimplePathEnvironment(participantA, participantB))
+      Some(new SimplePathEnvironment(participantA, participantB, referencePath))
     }
     else
       None

@@ -17,7 +17,7 @@ object CrossVal extends App with LazyLogging {
 
   val foldFiles = dir.listFiles().filter(f => f.getName.toLowerCase.endsWith(".tsv"))
 
-  val slices:Seq[(Seq[(String, String)], Seq[(String, String)])] = makeCVSlices(foldFiles)
+  val slices = makeCVSlices(foldFiles)
 
 
   // CV results
@@ -30,7 +30,7 @@ object CrossVal extends App with LazyLogging {
     val trainer = new Trainer(trainData.toIterator)
     val learntPolicy = trainer.run()
     // Do testing
-    val tester = new Tester(testData, learntPolicy)
+    val tester = new Tester(testData map (_._1), learntPolicy)
     val (numFound, papersRead, queriesIssued) = tester.run()
     // Collect results
     numPathsFound += numFound
@@ -70,13 +70,14 @@ object CrossVal extends App with LazyLogging {
     (mean, serr)
   }
 
-  def makeCVSlices(foldFiles:IndexedSeq[File]):Seq[(Seq[(String, String)], Seq[(String, String)])] = {
+  // TODO: Check the return types, perhaps replace it by a case class for simplification
+  def makeCVSlices(foldFiles:IndexedSeq[File]):List[(List[((String, String), Array[String])], List[((String, String), Array[String])])] = {
     val folds = foldFiles map {
       file =>
         io.Source.fromFile(file).getLines().toList.map{
           l =>
             val x = l.split('\t')
-            (x.head, x.last)
+            ((x.head, x.last), x)
         }
     }
 
