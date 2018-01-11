@@ -118,7 +118,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
   with SQLIteIEStrategy {
 
 
-
   // Fields
 
   val actionCounters = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
@@ -197,39 +196,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
     }
   }
 
-// TODO: Deal with this correctly. In training, the agent shouldn't quit in the endpoints stage. In testing, it will behave like a search agent, just as the baseline
-//  override def failureStopCondition(source: Participant,
-//                                    destination: Participant,
-//                                    model: SearchModel):Boolean = {
-//    // Need to add this condition because I need to account for the two different
-//    stage match {
-//      case FocusedReadingStage.EndPoints => false
-//      case FocusedReadingStage.Query =>{
-//        // TODO: Parameterize these numbers into a configuration file
-//        if(this.iterationNum >= 200)
-//          true
-//        else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
-//          // If the model didn't change, increase the unchanged iterations counter
-//          unchangedIterations += 1
-//          // This line prints twice because in the policy search agent specialization, the process is divided in two stages:
-//          // Endpoints and Query. Each stage takes an iteration
-//          // TODO: Fix this by overriding this method in PolicySearchAgent
-//          logger.info(s"The model didn't change $unchangedIterations times")
-//          if(unchangedIterations >= 10)
-//            true
-//          else
-//            false
-//        }
-//        else {
-//          // Reset the counter of unchanged iterations
-//          unchangedIterations = 0
-//          false
-//        }
-//      }
-//    }
-//
-//  }
-
 
   override def choseQuery(a: Participant,
                           b: Participant,
@@ -256,9 +222,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
   override def observeState:State = {
 
-    // TODO: Parameterize these to a config file
-    val few = 5
-    val many = 50
+    val few = this.fewPapers
+    val many = this.manyPapers
 
     // Do IR queries
     val (a, b) = queryLog.last
@@ -435,7 +400,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant, val 
 
     stage = FocusedReadingStage.Query
 
-    0.0 //TODO: Tinker with this reward
+    0.0 // This reward is zero because this is an intermediate step of the FR loop
+        // The actual signal comes after the query stage whether it found a path
   }
 
 

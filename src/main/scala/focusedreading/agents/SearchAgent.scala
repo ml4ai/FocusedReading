@@ -161,13 +161,13 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
                            mutate:Boolean):Boolean
 
 
-  // TODO: Write docstring for this method
+
   /**
     * Select a query strategy anchored on the parameters
-    * @param source
-    * @param destination
-    * @param model
-    * @return
+    * @param source Anchor participant
+    * @param destination Anchor participant
+    * @param model Search graph
+    * @return Resulting instance of query strategy
     */
   def choseQuery(source:Participant, destination:Participant, model:SearchModel):Query
 
@@ -234,7 +234,6 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
                                     destination: Participant,
                                     model: SearchModel,
                                     persist: Boolean):Boolean = {
-    // TODO: Parameterize these numbers into a configuration file
     if(this.iterationNum >= maxIterations)
       true
     else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
