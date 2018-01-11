@@ -57,7 +57,8 @@ object Baseline extends App with LazyLogging{
     }
 
     // The first argument is the input file
-    val dataSet:Iterable[Seq[String]] = io.Source.fromFile(args(0)).getLines
+    val inputPath = config.getConfig("baseline").getString("inputFile")
+    val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
       .map{
         s =>
           val t = s.split("\t").toSeq
