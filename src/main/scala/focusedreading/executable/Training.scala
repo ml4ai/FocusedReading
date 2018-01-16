@@ -1,16 +1,21 @@
 package focusedreading.executable
 
+import java.io.File
+
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
+import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
+import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
 import org.sarsamora.policy_iteration.td.SARSA
 import org.sarsamora.{Decays, scalaRand}
+
 
 /**
   * Created by enrique on 31/03/17.
@@ -39,6 +44,24 @@ object Training extends App {
 
   val dataSet:Iterator[Tuple2[(String, String), Seq[String]]] = Iterator.continually(randomizedData).flatten
 
+
+  // Instantiate the normalization parameters, if necessary
+  val normalizationConfig = trainingConfig.getConfig("normalization")
+
+  val normalizationParameters = normalizationConfig.getBoolean("enabled") match {
+    case true => {
+      val lower = normalizationConfig.getDouble("lower")
+      val upper = normalizationConfig.getDouble("upper")
+      val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+
+      val parameters = NormalizationParameters(lower, upper, ranges)
+
+      Some(parameters)
+    }
+    case false => None
+  }
+  /////////////////////////////////////////////////////////
+
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
       val episodeData = dataSet.next
@@ -47,7 +70,7 @@ object Training extends App {
       val participantB = Participant("", pair._2)
       val reference = sequence map (p => Participant("", p))
 
-      Some(new SimplePathEnvironment(participantA, participantB, reference))
+      Some(new SimplePathEnvironment(participantA, participantB, reference, normalizationParameters))
     }
     else
       None
@@ -80,7 +103,6 @@ object Training extends App {
     f.saveas(s"plot_$title.png")
   }
 
-
   val epochs = trainingConfig.getInt("epochs")
   val numEpisodes = trainingConfig.getInt("maxEpisodes") //pairs.size * epochs
   val burnInEpisodes = trainingConfig.getInt("burnInEpisodes")
@@ -107,6 +129,14 @@ object Training extends App {
 
   val policyPath = trainingConfig.getString("policyFile")
   learntPolicy.save(policyPath)
+
+  // Compute the features' observed  ranges
+  val featureRanges = FocusedReadingState.observedFeatureRanges()
+
+  // Store those ranges
+  val rangesPath = trainingConfig.getString("rangesFile")
+  NormalizationParameters.serializeFeatureRanges(featureRanges, "ranges.tsv")
+
 
 //  val steps = policyIteration.controlCount
 //  val coefficients = qFunction.coefficients.toSeq

@@ -8,14 +8,17 @@ import org.sarsamora.policies.DummyPolicy
 import org.sarsamora.states.State
 import focusedreading.agents.FocusedReadingStage
 import focusedreading.reinforcement_learning.actions._
+import focusedreading.reinforcement_learning.states.NormalizationParameters
 
 
 /**
   * Created by enrique on 30/03/17.
   */
-class SimplePathEnvironment(participantA:Participant, participantB:Participant, referencePath:Seq[Participant]) extends Environment {
+class SimplePathEnvironment(participantA:Participant, participantB:Participant,
+                            referencePath:Seq[Participant],
+                            normalizationParameters:Option[NormalizationParameters]) extends Environment {
 
-  val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy(), Some(referencePath))
+  val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy(), Some(referencePath), normalizationParameters)
 
   override def possibleActions(): Seq[Action] = agent.possibleActions()
 
@@ -46,6 +49,14 @@ class SimplePathEnvironment(participantA:Participant, participantB:Participant, 
     }
   }
 
-  override def finishedEpisode:Boolean = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)
+  override def finishedEpisode:Boolean ={
+    val ret = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)
+
+    if(ret){
+      println(s"Reward shaping times: ${agent.shapingCount}")
+    }
+
+    ret
+  }
 
 }

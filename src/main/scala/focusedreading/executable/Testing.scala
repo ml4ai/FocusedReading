@@ -11,6 +11,7 @@ import focusedreading.tracing.AgentRunTrace
 import focusedreading.{Connection, Participant}
 import org.sarsamora.policies._
 import com.typesafe.config.ConfigFactory
+import focusedreading.reinforcement_learning.states.NormalizationParameters
 
 import scala.collection.mutable
 
@@ -104,7 +105,26 @@ object Testing extends App with LazyLogging{
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
     val policyPath = testingConfig.getString("policyFile")
     val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
-    val agent = new PolicySearchAgent(participantA, participantB, policy)
+
+
+    // Instantiate the normalization parameters, if necessary
+    val normalizationConfig = testingConfig.getConfig("normalization")
+
+    val normalizationParameters = normalizationConfig.getBoolean("enabled") match {
+      case true => {
+        val lower = normalizationConfig.getDouble("lower")
+        val upper = normalizationConfig.getDouble("upper")
+        val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+
+        val parameters = NormalizationParameters(lower, upper, ranges)
+
+        Some(parameters)
+      }
+      case false => None
+    }
+    /////////////////////////////////////////////////////////
+
+    val agent = new PolicySearchAgent(participantA, participantB, policy, normalizationParameters = normalizationParameters)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
 

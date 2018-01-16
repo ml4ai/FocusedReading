@@ -7,6 +7,7 @@ package focusedreading.reinforcement_learning.states
   * Contains the state representation data structure and related code for Focused Reading
   */
 
+import collection.mutable
 import org.sarsamora.states.State
 
 object RankBin extends Enumeration {
@@ -53,7 +54,8 @@ case class FocusedReadingState(paRank:Double,
                                exploreFewIRScores:Seq[Float],
                                exploreManyIRScores:Seq[Float],
                                exploitIRScores:Seq[Float],
-                               unchangedIterations:Int
+                               unchangedIterations:Int,
+                               normalizationParameters: Option[NormalizationParameters]
                               ) extends State{
 
   // Aggregate the scores
@@ -106,7 +108,7 @@ case class FocusedReadingState(paRank:Double,
     * @return Map of feature names -> feature values
     */
   override def toFeatures():Map[String, Double] = {
-    Map(
+    val featureValues = Map[String, Double](
       "iteration" -> iteration.toDouble,
       "paQueryLogCount" -> paQueryLogCount.toDouble,
       "pbQueryLogCount" -> pbQueryLogCount.toDouble,
@@ -128,5 +130,47 @@ case class FocusedReadingState(paRank:Double,
       //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")
+
+
+    // Keep trak of the feature values
+    FocusedReadingState.recordObsevation(featureValues)
+
+    // Normalize if requested
+    val retVal = this.normalizationParameters match {
+      case Some(parameters) => parameters.normalize(featureValues)
+      case None => featureValues
+    }
+
+    retVal
+  }
+}
+
+/**
+  * Companion object to the FocusedReadingState class
+  */
+object FocusedReadingState {
+
+  val featureValueObservations = new mutable.HashMap[String, mutable.ArrayBuffer[Double]]()
+
+  def recordObsevation(values:Map[String, Double]): Unit ={
+    for((k, v) <- values){
+      // Lazily create the array buffer for the feature
+      if(!featureValueObservations.contains(k)){
+        featureValueObservations += k -> new mutable.ArrayBuffer[Double]()
+      }
+      // Log the feature value
+      featureValueObservations(k) += v
+    }
+  }
+
+  /**
+    * Computes the feature ranges out of the observed feature values during the run
+    * @return Feature ranges
+    */
+  def observedFeatureRanges():Map[String, (Double, Double)] = {
+    Map() ++ featureValueObservations map {
+      case (k, v) =>
+        k -> (v.min, v.max)
+    }
   }
 }

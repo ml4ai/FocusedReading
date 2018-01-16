@@ -18,7 +18,8 @@ class Trainer(dataSet:Iterator[Tuple2[(String, String), Array[String]]]) {
       val participantB = Participant("", pair._2)
       val referencePath = sequence map (p=> Participant("", p))
 
-      Some(new SimplePathEnvironment(participantA, participantB, referencePath))
+      // TODO: Integrate the normalization parameters
+      Some(new SimplePathEnvironment(participantA, participantB, referencePath, normalizationParameters = None))
     }
     else
       None

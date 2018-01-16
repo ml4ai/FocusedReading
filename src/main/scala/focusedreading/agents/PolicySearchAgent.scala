@@ -9,6 +9,7 @@ import focusedreading.models.{GFSModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
+import focusedreading.reinforcement_learning.states.NormalizationParameters
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
@@ -27,7 +28,8 @@ import scala.collection.mutable
   */
 class PolicySearchAgent(participantA:Participant, participantB:Participant,
                         val policy:Policy,
-                        val referencePath:Option[Seq[Participant]] = None) extends SimplePathAgent(participantA, participantB)
+                        val referencePath:Option[Seq[Participant]] = None,
+                        val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
   with PolicyParticipantsStrategy
   with RedisIRStrategy
   with SQLIteIEStrategy {
@@ -189,7 +191,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
     FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
       pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded,
-      pbUngrounded, explorationFewIRScores, explorationManyIRScores, exploitationIRScores, unchangedIterations)
+      pbUngrounded, explorationFewIRScores, explorationManyIRScores,
+      exploitationIRScores, unchangedIterations, normalizationParameters)
   }
 
   private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {
@@ -221,6 +224,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
   private val uniquePapers = new mutable.HashSet[String]()
+  var shapingCount:Int = 0
 
   private def executePolicyQueryStage(action:Action, persist:Boolean):Double = {
 
@@ -274,9 +278,14 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     }
 
     // Reward shaping function (potential difference)
-    val shaping = currentPotential - prevPotential
+    val rewardShapigCoefficient = mdpConfig.getDouble("rewardShapingCoefficient")
+    val shaping = rewardShapigCoefficient*currentPotential - prevPotential
 
 
+    // TODO: Delete me
+    if(shaping > 0)
+      shapingCount += 1
+    /////////////////
     // Return the observed reward
     if(!this.hasFinished(participantA, participantB, model, true)){
       // If this episode hasn't finished
@@ -287,7 +296,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
       val uniquePapers = this.papersRead.toSet.size
       successStopCondition(participantA, participantB, model) match{
         case Some(p) =>
-          1.0 + shaping
+          10.0 + shaping
         case None =>
           -1.0 + shaping
       }
