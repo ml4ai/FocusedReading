@@ -225,6 +225,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
   private val uniquePapers = new mutable.HashSet[String]()
   var shapingCount:Int = 0
+  var rewardEvaluated:Int = 0
 
   private def executePolicyQueryStage(action:Action, persist:Boolean):Double = {
 
@@ -283,8 +284,10 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
     // TODO: Delete me
-    if(shaping > 0)
+    if(shaping > 0) {
       shapingCount += 1
+    }
+    rewardEvaluated += 1
     /////////////////
     // Return the observed reward
     if(!this.hasFinished(participantA, participantB, model, true)){

@@ -18,6 +18,9 @@ class SimplePathEnvironment(participantA:Participant, participantB:Participant,
                             referencePath:Seq[Participant],
                             normalizationParameters:Option[NormalizationParameters]) extends Environment {
 
+  var rewardShapped:Int = 0
+  var rewardEvaluated:Int = 0
+
   val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy(), Some(referencePath), normalizationParameters)
 
   override def possibleActions(): Seq[Action] = agent.possibleActions()
@@ -52,9 +55,12 @@ class SimplePathEnvironment(participantA:Participant, participantB:Participant,
   override def finishedEpisode:Boolean ={
     val ret = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)
 
+    // TODO: Clean this up or remove
     if(ret){
-      println(s"Reward shaping times: ${agent.shapingCount}")
+      rewardShapped = agent.shapingCount
+      rewardEvaluated = agent.rewardEvaluated
     }
+    ////////////////////////////////
 
     ret
   }

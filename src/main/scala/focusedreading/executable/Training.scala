@@ -2,10 +2,12 @@ package focusedreading.executable
 
 import java.io.File
 
+import collection.mutable
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
 import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
@@ -21,11 +23,12 @@ import org.sarsamora.{Decays, scalaRand}
   * Created by enrique on 31/03/17.
   */
 
-object Training extends App {
+object Training extends App with LazyLogging {
 
   val config = ConfigFactory.load()
 
   val trainingConfig = config.getConfig("training")
+  val mdpConfig = config.getConfig("MDP")
 
   val inputPath = trainingConfig.getString("inputFile")
 
@@ -62,6 +65,9 @@ object Training extends App {
   }
   /////////////////////////////////////////////////////////
 
+  // Keep track of the environments created for the sake of statistics
+  val environmentCache = new mutable.ArrayBuffer[SimplePathEnvironment]()
+
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
       val episodeData = dataSet.next
@@ -70,7 +76,12 @@ object Training extends App {
       val participantB = Participant("", pair._2)
       val reference = sequence map (p => Participant("", p))
 
-      Some(new SimplePathEnvironment(participantA, participantB, reference, normalizationParameters))
+      // Record the just-created environment
+      val environment = new SimplePathEnvironment(participantA, participantB, reference, normalizationParameters)
+      environmentCache += environment
+      /////////////////////////////////
+
+      Some(environment)
     }
     else
       None
@@ -120,13 +131,25 @@ object Training extends App {
 //  val eps = (0 to (numEpisodes/2)).toStream.map(i => epsilon-(i*epsilonDecrease)).iterator ++ Stream.continually(0.01)
   val eps = Decays.exponentialDecay(epsilon, lowerBound, trainingData.size*(epochs-2), trainingData.size).iterator
   ///////////////////
+
+  // Initial policy
   val initialPolicy = new EpGreedyPolicy(eps, qFunction)
 
+  // Iterate the policy
   val learntPolicy = policyIteration.iteratePolicy(initialPolicy)
 
-  // Store the policy somewhere
-  // Serializer.save(learntPolicy, "learnt_policy.ser")
+  // Print the number of times the reward was shaped
+  val (totalRewardsShaped, totalRewards) = environmentCache.map{
+    env => (env.rewardShapped, env.rewardShapped)
+  }.reduce{
+    (a, b) => (a._1+b._1, a._2+b._2)
+  }
 
+  if(mdpConfig.getBoolean("rewardShaping")) {
+    logger.info(s"Reward shapping: $totalRewardsShaped out of $totalRewards")
+  }
+
+  // Store the policy somewhere
   val policyPath = trainingConfig.getString("policyFile")
   learntPolicy.save(policyPath)
 
