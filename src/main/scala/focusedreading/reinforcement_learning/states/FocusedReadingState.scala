@@ -73,36 +73,6 @@ case class FocusedReadingState(paRank:Double,
     }
   }
 
-  override def hashCode(): Int = {
-    // TODO: Automatically calculate this using reflection
-    s"$paRank-$pbRank-$iteration-$paQueryLogCount-$pbQueryLogCount-$sameComponent-$paIterationIntroduction-$pbIterationIntroduction-$paUngrounded-$pbUngrounded-$unchangedIterations".hashCode
-  }
-
-  override def equals(obj: scala.Any): Boolean = {
-    // TODO: Automatically calculate this using reflection
-    if(obj.getClass == this.getClass){
-      val that = obj.asInstanceOf[FocusedReadingState]
-      if(paRank == that.paRank
-        && pbRank == that.pbRank
-        && iteration == that.iteration
-        && paQueryLogCount == that.paQueryLogCount
-        && pbQueryLogCount == that.pbQueryLogCount
-        && sameComponent == that.sameComponent
-        && paIterationIntroduction == that.paIterationIntroduction
-        && pbIterationIntroduction == that.pbIterationIntroduction
-        && exploreFewIRScores == that.exploreFewIRScores
-        && exploreManyIRScores == that.exploreManyIRScores
-        && exploitIRScores == that.exploitIRScores
-        && unchangedIterations == that.unchangedIterations)
-        true
-      else
-        false
-    }
-    else{
-      false
-    }
-  }
-
   /**
     * Convert the state representation to feature values used by a learning component
     * @return Map of feature names -> feature values
