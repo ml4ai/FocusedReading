@@ -66,7 +66,7 @@ object Training extends App with LazyLogging {
   /////////////////////////////////////////////////////////
 
   // Keep track of the environments created for the sake of statistics
-  val environmentCache = new mutable.ArrayBuffer[SimplePathEnvironment]()
+//  val environmentCache = new mutable.ArrayBuffer[SimplePathEnvironment]()
 
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
@@ -78,7 +78,7 @@ object Training extends App with LazyLogging {
 
       // Record the just-created environment
       val environment = new SimplePathEnvironment(participantA, participantB, reference, normalizationParameters)
-      environmentCache += environment
+//      environmentCache += environment
       /////////////////////////////////
 
       Some(environment)
@@ -139,15 +139,15 @@ object Training extends App with LazyLogging {
   val learntPolicy = policyIteration.iteratePolicy(initialPolicy)
 
   // Print the number of times the reward was shaped
-  val (totalRewardsShaped, totalRewards) = environmentCache.map{
-    env => (env.rewardShapped, env.rewardShapped)
-  }.reduce{
-    (a, b) => (a._1+b._1, a._2+b._2)
-  }
+//  val (totalRewardsShaped, totalRewards) = environmentCache.map{
+//    env => (env.rewardShapped, env.rewardShapped)
+//  }.reduce{
+//    (a, b) => (a._1+b._1, a._2+b._2)
+//  }
 
-  if(mdpConfig.getBoolean("rewardShaping")) {
-    logger.info(s"Reward shapping: $totalRewardsShaped out of $totalRewards")
-  }
+//  if(mdpConfig.getBoolean("rewardShaping")) {
+//    logger.info(s"Reward shapping: $totalRewardsShaped out of $totalRewards")
+//  }
 
   // Store the policy somewhere
   val policyPath = trainingConfig.getString("policyFile")
