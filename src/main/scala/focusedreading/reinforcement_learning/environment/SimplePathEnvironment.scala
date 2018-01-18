@@ -14,7 +14,7 @@ import focusedreading.reinforcement_learning.states.NormalizationParameters
 /**
   * Created by enrique on 30/03/17.
   */
-class SimplePathEnvironment(participantA:Participant, participantB:Participant,
+case class SimplePathEnvironment(participantA:Participant, participantB:Participant,
                             referencePath:Seq[Participant],
                             normalizationParameters:Option[NormalizationParameters]) extends Environment {
 

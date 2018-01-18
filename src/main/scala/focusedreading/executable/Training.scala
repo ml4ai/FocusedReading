@@ -15,7 +15,7 @@ import focusedreading.reinforcement_learning.states.{FocusedReadingState, Normal
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
-import org.sarsamora.policy_iteration.td.SARSA
+import org.sarsamora.policy_iteration.td.{EpisodeObservation, EpisodeObserver, IterationObservation, SARSA}
 import org.sarsamora.{Decays, scalaRand}
 
 
@@ -23,6 +23,7 @@ import org.sarsamora.{Decays, scalaRand}
   * Created by enrique on 31/03/17.
   */
 
+// TODO: Clean up this class
 object Training extends App with LazyLogging {
 
   val config = ConfigFactory.load()
@@ -45,14 +46,14 @@ object Training extends App with LazyLogging {
     scalaRand.shuffle(trainingData)
   }
 
-  val dataSet:Iterator[Tuple2[(String, String), Seq[String]]] = Iterator.continually(randomizedData).flatten
+  val dataSet:Iterator[((String, String), Seq[String])] = Iterator.continually(randomizedData).flatten
 
 
   // Instantiate the normalization parameters, if necessary
   val normalizationConfig = trainingConfig.getConfig("normalization")
 
-  val normalizationParameters = normalizationConfig.getBoolean("enabled") match {
-    case true => {
+  val normalizationParameters = if(normalizationConfig.getBoolean("enabled")){
+
       val lower = normalizationConfig.getDouble("lower")
       val upper = normalizationConfig.getDouble("upper")
       val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
@@ -61,12 +62,29 @@ object Training extends App with LazyLogging {
 
       Some(parameters)
     }
-    case false => None
-  }
-  /////////////////////////////////////////////////////////
+    else{
+      None
+    }
 
-  // Keep track of the environments created for the sake of statistics
-//  val environmentCache = new mutable.ArrayBuffer[SimplePathEnvironment]()
+
+  /////////////////////////////////////////////////////////
+  // Keep track of policy iteration statistics
+  var episodeCounts = 0
+  var shapedEpisodes = 0
+
+
+  val episodeObserver = new EpisodeObserver{
+    override def observeIteration(data: IterationObservation): Unit = Unit
+
+    override def episodeFinished(data: EpisodeObservation): Unit = {
+      val environment = data.environment.asInstanceOf[SimplePathEnvironment]
+      if(environment.rewardShapped > 0){
+        shapedEpisodes += 1
+      }
+      episodeCounts += 1
+    }
+  }
+  ////////////////////////////////////////////////////////
 
   def focusedReadingFabric():Option[Environment] = {
     if(dataSet.hasNext){
@@ -76,12 +94,7 @@ object Training extends App with LazyLogging {
       val participantB = Participant("", pair._2)
       val reference = sequence map (p => Participant("", p))
 
-      // Record the just-created environment
-      val environment = new SimplePathEnvironment(participantA, participantB, reference, normalizationParameters)
-//      environmentCache += environment
-      /////////////////////////////////
-
-      Some(environment)
+      Some(SimplePathEnvironment(participantA, participantB, reference, normalizationParameters))
     }
     else
       None
@@ -135,19 +148,10 @@ object Training extends App with LazyLogging {
   // Initial policy
   val initialPolicy = new EpGreedyPolicy(eps, qFunction)
 
-  // Iterate the policy
-  val learntPolicy = policyIteration.iteratePolicy(initialPolicy)
+  // Iterate the policy and it's convergence status
+  val (learntPolicy, convergenceStatus) = policyIteration.iteratePolicy(initialPolicy, Some(episodeObserver))
 
   // Print the number of times the reward was shaped
-//  val (totalRewardsShaped, totalRewards) = environmentCache.map{
-//    env => (env.rewardShapped, env.rewardShapped)
-//  }.reduce{
-//    (a, b) => (a._1+b._1, a._2+b._2)
-//  }
-
-//  if(mdpConfig.getBoolean("rewardShaping")) {
-//    logger.info(s"Reward shapping: $totalRewardsShaped out of $totalRewards")
-//  }
 
   // Store the policy somewhere
   val policyPath = trainingConfig.getString("policyFile")

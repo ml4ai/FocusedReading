@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "org.scalanlp" %% "breeze-natives" % "0.13",
   "org.scalanlp" %% "breeze-viz" % "0.13",
   "org.jfree" % "jfreechart" % "1.0.19",
-  "org.clulab" %% "sarsamora" % "0.0.0-SNAPSHOT",
+  "org.clulab" %% "sarsamora" % "0.1.0-SNAPSHOT",
   "org.clulab" %% "processors-main" % "6.0.1",
   "org.clulab" %% "processors-corenlp" % "6.0.1",
   "org.clulab" %% "processors-models" % "6.0.1",
