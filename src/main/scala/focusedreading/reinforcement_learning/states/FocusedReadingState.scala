@@ -143,4 +143,26 @@ object FocusedReadingState {
         k -> (v.min, v.max)
     }
   }
+
+  def featureNames:Set[String] = {
+    val dummyState = new FocusedReadingState(
+      0,
+      0,
+      0,
+      0,
+      0,
+      true,
+      0,
+      0,
+      true,
+      true,
+      Seq(),
+      Seq(),
+      Seq(),
+      0,
+      None
+    )
+
+    dummyState.toFeatures().keySet
+  }
 }

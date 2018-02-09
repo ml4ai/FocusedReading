@@ -14,8 +14,10 @@ import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
-import org.sarsamora.policies.{EpGreedyPolicy, LinearApproximationValues}
-import org.sarsamora.policy_iteration.td.{EpisodeObservation, EpisodeObserver, IterationObservation, SARSA}
+import org.sarsamora.policies.{EpGreedyPolicy, Policy}
+import org.sarsamora.policy_iteration.td.value_functions.LinearApproximationActionValues
+import org.sarsamora.policy_iteration.td.SARSA
+import org.sarsamora.policy_iteration.{EpisodeObservation, EpisodeObserver, IterationObservation}
 import org.sarsamora.{Decays, scalaRand}
 
 
@@ -86,7 +88,7 @@ object Training extends App with LazyLogging {
   }
   ////////////////////////////////////////////////////////
 
-  def focusedReadingFabric():Option[Environment] = {
+  val focusedReadingFabric = () => {
     if(dataSet.hasNext){
       val episodeData = dataSet.next
       val (pair, sequence) = episodeData
@@ -132,10 +134,11 @@ object Training extends App with LazyLogging {
   val burnInEpisodes = trainingConfig.getInt("burnInEpisodes")
   val learningRate = trainingConfig.getDouble("learningRate")
   val decay = trainingConfig.getDouble("decayParameter")
+  val lambda = 1d // TODO: parameterize this
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, burnInEpisodes, learningRate, decay)
+  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, burnInEpisodes, learningRate, decay, lambda)
   val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
-  val qFunction = new LinearApproximationValues(activeActions)
+  val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 
   // Decaying epsilon
   val epsilon = trainingConfig.getConfig("epsilon").getDouble("initial")
@@ -149,7 +152,7 @@ object Training extends App with LazyLogging {
   val initialPolicy = new EpGreedyPolicy(eps, qFunction)
 
   // Iterate the policy and it's convergence status
-  val (learntPolicy, convergenceStatus) = policyIteration.iteratePolicy(initialPolicy, Some(episodeObserver))
+  val (learntPolicy:Policy, convergenceStatus) = policyIteration.iteratePolicy(initialPolicy, Some(episodeObserver))
 
   // Print the number of times the reward was shaped
 

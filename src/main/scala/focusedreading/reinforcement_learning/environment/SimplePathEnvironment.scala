@@ -4,11 +4,11 @@ import focusedreading.Participant
 import focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent}
 import org.sarsamora.environment.Environment
 import org.sarsamora.actions.Action
-import org.sarsamora.policies.DummyPolicy
 import org.sarsamora.states.State
 import focusedreading.agents.FocusedReadingStage
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.NormalizationParameters
+import org.sarsamora.policies.Policy
 
 
 /**
@@ -21,15 +21,22 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
   var rewardShapped:Int = 0
   var rewardEvaluated:Int = 0
 
-  val agent = new PolicySearchAgent(participantA, participantB, DummyPolicy(), Some(referencePath), normalizationParameters)
+  // TODO Refactor the code to eliminate this dummy policy
+  val dummyPolicy = new Policy(){
+    override def selectAction(s: State, possibleActions: Seq[Action]): Action = possibleActions.head
+
+    override def save(path: String): Unit = Unit
+  }
+
+  val agent = new PolicySearchAgent(participantA, participantB, dummyPolicy, Some(referencePath), normalizationParameters)
 
   override def possibleActions(): Seq[Action] = agent.possibleActions()
 
-  override def executePolicy(action: Action, persist: Boolean): Double = agent.executePolicy(action, persist)
+  override def execute(action: Action, persist: Boolean): Double = agent.executePolicy(action, persist)
 
   override def observeState: State = agent.observeState
 
-  override def observeStates: Seq[State] = {
+  def observeStates: Seq[State] = {
     (agent.stage: @unchecked) match {
       case FocusedReadingStage.Query =>
         val state = agent.observeState

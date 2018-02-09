@@ -126,7 +126,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     val state = this.observeState
 
     // Query the policy
-    val (_, action) = policy.selectAction(state, possibleActions)
+    val action = policy.selectAction(state, possibleActions)
 
     // Keep track of the action selection
     actionCounters(action.toString) += 1

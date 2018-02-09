@@ -9,7 +9,8 @@ import org.json4s.DefaultFormats
 import collection.mutable
 import org.json4s.JsonAST.{JArray, JObject, JValue}
 import org.sarsamora.actions.Action
-import org.sarsamora.policies.ActionValueLoader
+import org.sarsamora.states.{State, StateParser}
+import org.sarsamora.value_functions.ActionValueLoader
 
 sealed class FocusedReadingAction() extends Action
 
@@ -24,7 +25,7 @@ case class ExploreEndpoints() extends FocusedReadingAction
 case class ExploitEndpoints() extends FocusedReadingAction
 
 
-class FocusedReadingActionValues extends ActionValueLoader {
+class FocusedReadingActionValues extends ActionValueLoader with StateParser {
   implicit lazy val formats = DefaultFormats
 
 
@@ -58,5 +59,11 @@ class FocusedReadingActionValues extends ActionValueLoader {
     }.toMap
 
     coefficientsMap
+  }
+
+  override val stateParser = this
+
+  override def fromString(description: String):State = {
+    throw new Exception("Not implemented")
   }
 }

@@ -4,6 +4,7 @@ import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.models.SearchModel
 import focusedreading.reinforcement_learning.actions.{ExploitEndpoints, ExploreEndpoints}
+import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
@@ -41,7 +42,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
   //private def possibleActions:Seq[Action] = getUsedActions//Seq(ExploreEndpoints(), ExploitEndpoints())
 
-  private def peekState(a:Participant, b:Participant):State = {
+  private def peekState(a:Participant, b:Participant):FocusedReadingState = {
     this.queryLog += Tuple2(a, b)
     val containsA = introductions.contains(a)
     val containsB = introductions.contains(b)
@@ -51,7 +52,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
     if (!containsB)
       introductions += b -> getIterationNum
 
-    val state = this.observeState
+    val state = this.observeState.asInstanceOf[FocusedReadingState]
 
     // Undo the changes
     queryLog.remove(queryLog.size - 1)
@@ -67,18 +68,18 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   // Alternate state observation methods
   def observeExploreState(source: Participant, destination: Participant,
                           previouslyChosen: Set[(Participant, Participant)]
-                          , model: SearchModel):((Participant, Participant), State) =
-    observeStrategtState(exploreChooser, source, destination, previouslyChosen, model)
+                          , model: SearchModel):((Participant, Participant), FocusedReadingState) =
+    observeStrategyState(exploreChooser, source, destination, previouslyChosen, model)
 
   def observeExploitState(source: Participant, destination: Participant,
                           previouslyChosen: Set[(Participant, Participant)]
-                          , model: SearchModel):((Participant, Participant), State) =
-    observeStrategtState(exploitChooser, source, destination, previouslyChosen, model)
+                          , model: SearchModel):((Participant, Participant), FocusedReadingState) =
+    observeStrategyState(exploitChooser, source, destination, previouslyChosen, model)
 
-  private def observeStrategtState(chooser:ParticipantChoosingStrategy,
+  private def observeStrategyState(chooser:ParticipantChoosingStrategy,
                                    source: Participant, destination: Participant,
                                    previouslyChosen: Set[(Participant, Participant)],
-                                   model: SearchModel):((Participant, Participant), State) = {
+                                   model: SearchModel):((Participant, Participant), FocusedReadingState) = {
     val endpoints = chooser.choseEndPoints(source, destination, previouslyChosen, model)
 
     var a = endpoints._1
@@ -113,14 +114,17 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
     val states = PolicySearchAgent.getActiveEndpointActions map {
       case _:ExploreEndpoints =>
-        exploreState
+         "explore" -> exploreState
       case _:ExploitEndpoints =>
-        exploitState
-    }
+        "exploit" -> exploitState
+    } toMap
+
+    // Combine both states into a single one
+    val combinedState = FocusedReadingCompositeState(states("explore"), states("exploit"))
 
 
     // Choose the action
-    val (_, action) = policy.selectAction(states.toSeq, PolicySearchAgent.getActiveEndpointActions.toSeq)
+    val action = policy.selectAction(combinedState, PolicySearchAgent.getActiveEndpointActions.toSeq)
 
     lastActionChosen = Some(action)
 
