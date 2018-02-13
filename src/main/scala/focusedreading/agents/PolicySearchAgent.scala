@@ -8,13 +8,12 @@ import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy}
 import focusedreading.models.{GFSModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
-import focusedreading.reinforcement_learning.states.NormalizationParameters
+import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters, RankBin}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 
@@ -36,7 +35,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
   // Fields
-  val actionCounters = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
+  val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
 
 
   var stage:FocusedReadingStage.Value = FocusedReadingStage.EndPoints
@@ -44,10 +43,10 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   this.introductions += participantA -> 0
   this.introductions += participantB -> 0
 
-  val configuration = ConfigFactory.load()
-  val useRewardShaping = configuration.getConfig("MDP").getBoolean("rewardShaping")
-  val fewPapers:Int = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
-  val manyPapers:Int = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
+  private val configuration = ConfigFactory.load()
+  private val useRewardShaping = configuration.getConfig("MDP").getBoolean("rewardShaping")
+  private val fewPapers = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
+  private val manyPapers = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
   ////////////
 
   override def choseEndPoints(source: Participant, destination: Participant,
@@ -138,21 +137,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   }
 
   override def observeState:State = {
-
-    val few = this.fewPapers
-    val many = this.manyPapers
-
-    // Do IR queries
-    val (a, b) = queryLog.last
-    val exploreFewQuery = Query(QueryStrategy.Disjunction, few, a, Some(b))
-    val exploreManyQuery = Query(QueryStrategy.Disjunction, many, a, Some(b))
-    val exploitQuery = Query(QueryStrategy.Conjunction, few, a, Some(b))
-
-    val exploreFewIRScores = this.informationRetrival(exploreFewQuery) map (_._2)
-    val exploreManyIRScores = this.informationRetrival(exploreFewQuery) map (_._2)
-    val exploitIRScores = this.informationRetrival(exploitQuery) map (_._2)
-
-    fillState(this.model, iterationNum, queryLog, introductions, exploreFewIRScores.toSeq, exploreManyIRScores.toSeq, exploitIRScores.toSeq)
+    fillState(this.model, iterationNum, queryLog, introductions)
   }
 
   override def getIterationNum: Int = iterationNum
@@ -160,39 +145,60 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   // Auxiliary methods
   private def fillState(model:SearchModel, iterationNum:Int,
                         queryLog:Seq[(Participant, Participant)],
-                        introductions:mutable.Map[Participant, Int],
-                        explorationFewIRScores:Seq[Float],
-                        explorationManyIRScores:Seq[Float],
-                        exploitationIRScores:Seq[Float]):State = {
+                        introductions:mutable.Map[Participant, Int]):State = {
 
-    val (a, b) = queryLog.last
-    val log = queryLog flatMap (l => Seq(l._1, l._2))
-    val paQueryLogCount = log.count(p => p == a)
-    val pbQueryLogCount = log.count(p => p == b)
+    if(queryLog.nonEmpty) {
 
-    val compA = model.getConnectedComponentOf(a).get
-    val compB = model.getConnectedComponentOf(b).get
 
-    val sameComponent = compA == compB
 
-    val paIntro = introductions(a)
-    val pbIntro = introductions(b)
+      val (a, b) = queryLog.last
+      val log = queryLog flatMap (l => Seq(l._1, l._2))
+      val paQueryLogCount = log.count(p => p == a)
+      val pbQueryLogCount = log.count(p => p == b)
 
-    val ranks:Map[Participant, Int] = model.rankedNodes
+      val few = this.fewPapers
+      val many = this.manyPapers
 
-    val paRank = (ranks(a)+1) / model.numNodes.toDouble //getRank(a, ranks)
-    val pbRank = (ranks(b)+1) / model.numNodes.toDouble //getRank(b, ranks)
+      val exploreFewQuery = Query(QueryStrategy.Disjunction, few, a, Some(b))
+      val exploreManyQuery = Query(QueryStrategy.Disjunction, many, a, Some(b))
+      val exploitQuery = Query(QueryStrategy.Conjunction, few, a, Some(b))
 
-    val paUngrounded = a.id.toUpperCase.startsWith("UAZ")
-    val pbUngrounded = b.id.toUpperCase.startsWith("UAZ")
+      val exploreFewIRScores = this.informationRetrival(exploreFewQuery) map (_._2) toSeq
+      val exploreManyIRScores = this.informationRetrival(exploreManyQuery) map (_._2) toSeq
+      val exploitIRScores = this.informationRetrival(exploitQuery) map (_._2) toSeq
 
-    assert(paRank >= 0 && paRank <= 1, "PA rank is out of bounds")
-    assert(pbRank >= 0 && pbRank <= 1, "PA rank is out of bounds")
 
-    FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
-      pbQueryLogCount,sameComponent,paIntro,pbIntro, paUngrounded,
-      pbUngrounded, explorationFewIRScores, explorationManyIRScores,
-      exploitationIRScores, unchangedIterations, normalizationParameters)
+      val compA = model.getConnectedComponentOf(a).get
+      val compB = model.getConnectedComponentOf(b).get
+
+      val sameComponent = compA == compB
+
+      val paIntro = introductions(a)
+      val pbIntro = introductions(b)
+
+      val ranks: Map[Participant, Int] = model.rankedNodes
+
+      val paRank = (ranks(a) + 1) / model.numNodes.toDouble //getRank(a, ranks)
+      val pbRank = (ranks(b) + 1) / model.numNodes.toDouble //getRank(b, ranks)
+
+      val paUngrounded = a.id.toUpperCase.startsWith("UAZ")
+      val pbUngrounded = b.id.toUpperCase.startsWith("UAZ")
+
+      assert(paRank >= 0 && paRank <= 1, "PA rank is out of bounds")
+      assert(pbRank >= 0 && pbRank <= 1, "PA rank is out of bounds")
+
+      FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
+        pbQueryLogCount, sameComponent, paIntro, pbIntro, paUngrounded,
+        pbUngrounded, exploreFewIRScores, exploreManyIRScores,
+        exploitIRScores, unchangedIterations, stage, normalizationParameters)
+    }
+    else{
+
+      FocusedReadingState(0, 0, iterationNum, 0,
+        0, false, 0, 0, false,
+        false, Seq(0), Seq(0),
+        Seq(0), 0, stage, normalizationParameters)
+    }
   }
 
   private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {
@@ -273,9 +279,10 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
     // Compute the reward shaping, if on
-    val currentPotential = useRewardShaping match {
-      case false => 0.0
-      case true => shapingPotential
+    val currentPotential = if (useRewardShaping) {
+      shapingPotential
+    } else {
+      0.0
     }
 
     // Reward shaping function (potential difference)
@@ -287,6 +294,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     if(shaping > 0) {
       shapingCount += 1
     }
+
     rewardEvaluated += 1
     /////////////////
     // Return the observed reward

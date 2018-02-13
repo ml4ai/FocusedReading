@@ -7,7 +7,7 @@ import org.sarsamora.actions.Action
 import org.sarsamora.states.State
 import focusedreading.agents.FocusedReadingStage
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.NormalizationParameters
+import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, NormalizationParameters}
 import org.sarsamora.policies.Policy
 
 
@@ -34,30 +34,37 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 
   override def execute(action: Action, persist: Boolean): Double = agent.executePolicy(action, persist)
 
-  override def observeState: State = agent.observeState
-
-  def observeStates: Seq[State] = {
-    (agent.stage: @unchecked) match {
-      case FocusedReadingStage.Query =>
-        val state = agent.observeState
-        // Repeat the state the number of different action sizes available to zip it with the possible actions
-        // This is done because the state is dependent of the action to be chosen, feels incorrect TODO: Double check this is kosher
-        Seq.fill(PolicySearchAgent.getActiveQueryActions.size)(state)
-      case FocusedReadingStage.EndPoints =>
-        // TODO: Is it valid if the state is a function of the action? Verify this is valid
-        val exploreState = agent.observeExploreState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
-        val exploitState = agent.observeExploitState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
-
-        val actions = PolicySearchAgent.getActiveEndpointActions.toSeq
-
-        actions.map{
-          case _:ExploreEndpoints =>
-            exploreState
-          case _:ExploitEndpoints =>
-            exploitState
-        }
-    }
+  override def observeState: State = {
+//    // TODO Clean this
+//    val exploreState = agent.observeExploreState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
+//    val exploitState = agent.observeExploitState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
+//
+//    new FocusedReadingCompositeState(exploitState = exploitState, exploreState = exploreState)
+    agent.observeState
   }
+
+//  def observeStates: Seq[State] = {
+//    (agent.stage: @unchecked) match {
+//      case FocusedReadingStage.Query =>
+//        val state = agent.observeState
+//        // Repeat the state the number of different action sizes available to zip it with the possible actions
+//        // This is done because the state is dependent of the action to be chosen, feels incorrect TODO: Double check this is kosher
+//        Seq.fill(PolicySearchAgent.getActiveQueryActions.size)(state)
+//      case FocusedReadingStage.EndPoints =>
+//        // TODO: Is it valid if the state is a function of the action? Verify this is valid
+//        val exploreState = agent.observeExploreState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
+//        val exploitState = agent.observeExploitState(participantA, participantB, agent.triedPairs.toSet, agent.model)._2
+//
+//        val actions = PolicySearchAgent.getActiveEndpointActions.toSeq
+//
+//        actions.map{
+//          case _:ExploreEndpoints =>
+//            exploreState
+//          case _:ExploitEndpoints =>
+//            exploitState
+//        }
+//    }
+//  }
 
   override def finishedEpisode:Boolean ={
     val ret = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)

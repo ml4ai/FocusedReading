@@ -66,7 +66,7 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
 
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Disjunction, 100, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
+                          model: SearchModel) = Query(Cascade, 100, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
 
 }
 

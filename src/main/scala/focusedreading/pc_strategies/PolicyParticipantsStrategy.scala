@@ -33,8 +33,6 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   protected val exploitChooser = new {} with MostRecentParticipantsStrategy {
     override def participantIntroductions: mutable.HashMap[Participant, Int] = introductions
   }
-//    override val participantIntroductions = introductions
-//  }
 
 //  protected val exploitChooser = new {} with FurthestParticipantStrategy {}
 
@@ -112,19 +110,20 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
     chosenEndpointsLog += Tuple2(exploreEndpoints, exploitEndpoints)
 
 
-    val states = PolicySearchAgent.getActiveEndpointActions map {
-      case _:ExploreEndpoints =>
-         "explore" -> exploreState
-      case _:ExploitEndpoints =>
-        "exploit" -> exploitState
-    } toMap
+//    val states = PolicySearchAgent.getActiveEndpointActions map {
+//      case _:ExploreEndpoints =>
+//         "explore" -> exploreState
+//      case _:ExploitEndpoints =>
+//        "exploit" -> exploitState
+//    } toMap
 
     // Combine both states into a single one
-    val combinedState = FocusedReadingCompositeState(states("explore"), states("exploit"))
+//    val combinedState = FocusedReadingCompositeState(states("explore"), states("exploit"))
 
 
     // Choose the action
-    val action = policy.selectAction(combinedState, PolicySearchAgent.getActiveEndpointActions.toSeq)
+//    val action = policy.selectAction(combinedState, PolicySearchAgent.getActiveEndpointActions.toSeq)
+  val action = policy.selectAction(observeState, PolicySearchAgent.getActiveEndpointActions.toSeq)
 
     lastActionChosen = Some(action)
 

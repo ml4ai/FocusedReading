@@ -11,12 +11,12 @@ import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
-import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
+import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters}
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, Policy}
 import org.sarsamora.policy_iteration.td.value_functions.LinearApproximationActionValues
-import org.sarsamora.policy_iteration.td.SARSA
+import org.sarsamora.policy_iteration.td.{QLearning, SARSA}
 import org.sarsamora.policy_iteration.{EpisodeObservation, EpisodeObserver, IterationObservation}
 import org.sarsamora.{Decays, scalaRand}
 
@@ -136,7 +136,7 @@ object Training extends App with LazyLogging {
   val decay = trainingConfig.getDouble("decayParameter")
   val lambda = 1d // TODO: parameterize this
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, burnInEpisodes, learningRate, decay, lambda)
+  val policyIteration = new QLearning(focusedReadingFabric, numEpisodes, burnInEpisodes, learningRate, decay, lambda)
   val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
   val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 
@@ -165,7 +165,7 @@ object Training extends App with LazyLogging {
 
   // Store those ranges
   val rangesPath = trainingConfig.getString("rangesFile")
-  NormalizationParameters.serializeFeatureRanges(featureRanges, "ranges.tsv")
+  NormalizationParameters.serializeFeatureRanges(featureRanges, rangesPath)
 
 
 //  val steps = policyIteration.controlCount
