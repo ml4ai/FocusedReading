@@ -53,18 +53,23 @@ class NxmlSearcher(val indexDir:String) extends LazyLogging {
                     analyzer:Analyzer,
                     totalHits:Int,
                     verbose:Boolean = true):Set[(Int, Float)] = {
-    val q = new QueryParser(field, analyzer).parse(query)
-    val collector = TopScoreDocCollector.create(totalHits)
-    searcher.search(q, collector)
-    val hits = collector.topDocs().scoreDocs
-    val results = new mutable.HashSet[(Int, Float)]
-    for(hit <- hits) {
-      val docId = hit.doc
-      val score = hit.score
-      results += new Tuple2(docId, score)
+    try{
+      val q = new QueryParser(field, analyzer).parse(query)
+      val collector = TopScoreDocCollector.create(totalHits)
+      searcher.search(q, collector)
+      val hits = collector.topDocs().scoreDocs
+      val results = new mutable.HashSet[(Int, Float)]
+      for(hit <- hits) {
+        val docId = hit.doc
+        val score = hit.score
+        results += new Tuple2(docId, score)
+      }
+      if(verbose) logger.debug(s"""Found ${results.size} results for query "$query"""")
+      results.toSet
+    }catch{
+      case _:Throwable => Set()
     }
-    if(verbose) logger.debug(s"""Found ${results.size} results for query "$query"""")
-    results.toSet
+
   }
 
   def intersection(s1:Set[(Int, Float)], s2:Set[(Int, Float)]):Set[(Int, Float)] = {
