@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import focusedreading.{Connection, Participant}
 import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
-import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy}
+import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
 import focusedreading.models.{GFSModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
@@ -30,7 +30,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
                         val referencePath:Option[Seq[Participant]] = None,
                         val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
   with PolicyParticipantsStrategy
-  with RedisIRStrategy
+  with SQLIRStrategy
   with SQLIteIEStrategy {
 
 

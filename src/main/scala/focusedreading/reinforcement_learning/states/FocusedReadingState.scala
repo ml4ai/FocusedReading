@@ -93,17 +93,17 @@ case class FocusedReadingState(paRank:Double,
       "paIterationIntroduction" -> paIterationIntroduction.toDouble * isQueryStage,
       "pbIterationIntroduction" -> pbIterationIntroduction.toDouble * isQueryStage,
       "paRank" -> paRank  * isQueryStage,
-      "pbRank" -> pbRank  * isQueryStage,
-      "exploreFewIRScore_min" -> exploreFew._1  * isQueryStage,
-      "exploreFewIRScore_max" -> exploreFew._2  * isQueryStage,
-      "exploreFewIRScore_mean" -> exploreFew._3  * isQueryStage,
-      "exploreManyIRScore_min" -> exploreMany._1  * isQueryStage,
-      "exploreManyIRScore_max" -> exploreMany._2  * isQueryStage,
-      "exploreManyIRScore_mean" -> exploreMany._3  * isQueryStage,
-      "exploitIRScore_min" -> exploit._1  * isQueryStage,
-      "exploitIRScore_max" -> exploit._2  * isQueryStage,
-      "exploitIRScore_mean" -> exploit._3  * isQueryStage,
-      "unchangedIterations" -> unchangedIterations
+      "pbRank" -> pbRank  * isQueryStage
+//      "exploreFewIRScore_min" -> exploreFew._1  * isQueryStage,
+//      "exploreFewIRScore_max" -> exploreFew._2  * isQueryStage,
+//      "exploreFewIRScore_mean" -> exploreFew._3  * isQueryStage,
+//      "exploreManyIRScore_min" -> exploreMany._1  * isQueryStage,
+//      "exploreManyIRScore_max" -> exploreMany._2  * isQueryStage,
+//      "exploreManyIRScore_mean" -> exploreMany._3  * isQueryStage,
+//      "exploitIRScore_min" -> exploit._1  * isQueryStage,
+//      "exploitIRScore_max" -> exploit._2  * isQueryStage,
+//      "exploitIRScore_mean" -> exploit._3  * isQueryStage,
+//      "unchangedIterations" -> unchangedIterations
       //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")

@@ -56,7 +56,7 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   */
 class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
-  with RedisIRStrategy
+  with SQLIRStrategy
   with SQLIteIEStrategy {
 
 
@@ -66,7 +66,7 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
 
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Cascade, 100, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
+                          model: SearchModel) = Query(Cascade, 200, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
 
 }
 
