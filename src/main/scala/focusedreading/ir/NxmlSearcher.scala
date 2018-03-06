@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.ir
+package focusedreading.ir
 
 import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.Paths
@@ -22,11 +22,10 @@ import scala.collection.mutable.ArrayBuffer
 
 /**
   * Searches the NXML index created by NXML indexer
-  * User: mihais
+  * User: mihais. Altered by: Enrique
   * Date: 10/19/15
   */
 class NxmlSearcher(val indexDir:String) extends LazyLogging {
-  val TOTAL_HITS = 200
   val reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)))
   val searcher = new IndexSearcher(reader)
   val proc = new BioNLPProcessor(withChunks = false)
@@ -39,77 +38,38 @@ class NxmlSearcher(val indexDir:String) extends LazyLogging {
 
   }
 
-  def saveIds(docs:Set[(Document, Float)]): Unit = {
-    val os = new PrintWriter(new FileWriter("ids.txt"))
-    for(doc <- docs) {
-      val id = doc._1.get("id")
-      os.println(id)
-    }
-    os.close()
-  }
 
-  def saveNxml(resultDir:String, docs:Set[(Document, Float)], howManyToSave:Int = 0): Unit = {
-    val docSeq = if (howManyToSave > 0) {
-      docs.toSeq.sortBy(-_._2).take(howManyToSave)
-    } else {
-      docs.toSeq.sortBy(-_._2)
-    }
-    val sos = new PrintWriter(new FileWriter(resultDir + File.separator + "scores.tsv"))
-    for(doc <- docSeq) {
-      val id = doc._1.get("id")
-      val nxml = doc._1.get("nxml")
-      val os = new PrintWriter(new FileWriter(resultDir + File.separator + id + ".nxml"))
-      os.print(nxml)
-      os.close()
-      sos.println(s"$id\t${doc._2}")
-    }
-    sos.close()
-  }
 
-  def saveDocs(resultDir:String, docIds:Set[(Int, Float)]): Unit = {
-    val sos = new PrintWriter(new FileWriter(resultDir + File.separator + "scores.tsv"))
-    var count = 0
-    for(docId <- docIds) {
-      val doc = searcher.doc(docId._1)
-      val id = doc.get("id")
-      val nxml = doc.get("nxml")
-      val year = doc.get("year")
-      val size = nxml.toString.length * 2 // in bytes
-      val os = new PrintWriter(new FileWriter(resultDir + File.separator + id + ".nxml"))
-      os.print(nxml)
-      os.close()
-      sos.println(s"$id\t${docId._2}\t$year\t$size")
-      count += 1
-    }
-    sos.close()
-    logger.info(s"Saved $count documents.")
-  }
-
-  def search(query:String, totalHits:Int = TOTAL_HITS):Set[(Int, Float)] = {
+  def search(query:String, totalHits:Int):Set[(Int, Float)] = {
     searchByField(query, "text", new StandardAnalyzer(), totalHits)
   }
 
-  def searchId(id:String, totalHits:Int = 1):Set[(Int, Float)] = {
-    searchByField(id, "id", new WhitespaceAnalyzer(), totalHits)
+  def searchId(id:String):Set[(Int, Float)] = {
+    searchByField(id, "id", new WhitespaceAnalyzer(), 1)
   }
 
   def searchByField(query:String,
                     field:String,
                     analyzer:Analyzer,
-                    totalHits:Int = TOTAL_HITS,
+                    totalHits:Int,
                     verbose:Boolean = true):Set[(Int, Float)] = {
-    val q = new QueryParser(field, analyzer).parse(query)
-    val collector = TopScoreDocCollector.create(totalHits)
-    searcher.search(q, collector)
-    val hits = collector.topDocs().scoreDocs
-    val results = new mutable.HashSet[(Int, Float)]
-    for(hit <- hits) {
-      val docId = hit.doc
-      val score = hit.score
-      results += new Tuple2(docId, score)
+    try{
+      val q = new QueryParser(field, analyzer).parse(query)
+      val collector = TopScoreDocCollector.create(totalHits)
+      searcher.search(q, collector)
+      val hits = collector.topDocs().scoreDocs
+      val results = new mutable.HashSet[(Int, Float)]
+      for(hit <- hits) {
+        val docId = hit.doc
+        val score = hit.score
+        results += new Tuple2(docId, score)
+      }
+      if(verbose) logger.debug(s"""Found ${results.size} results for query "$query"""")
+      results.toSet
+    }catch{
+      case _:Throwable => Set()
     }
-    if(verbose) logger.debug(s"""Found ${results.size} results for query "$query"""")
-    results.toSet
+
   }
 
   def intersection(s1:Set[(Int, Float)], s2:Set[(Int, Float)]):Set[(Int, Float)] = {
@@ -135,13 +95,6 @@ class NxmlSearcher(val indexDir:String) extends LazyLogging {
     s1.foreach(result += _)
     s2.foreach(result += _)
     result.toSet
-  }
-
-  def countDocsContaining(eventDocs:Set[(Int, Float)], token:String):Int = {
-    // token could be a phrase; make sure quotes are used
-    val query = s"""Ras AND "$token""""
-    val result = intersection(eventDocs, search(query))
-    result.size
   }
 
 

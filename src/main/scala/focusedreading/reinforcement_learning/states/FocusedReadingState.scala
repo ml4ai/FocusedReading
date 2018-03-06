@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading.reinforcement_learning.states
+package focusedreading.reinforcement_learning.states
 
 /**
   * Created by enrique on 03/31/17.
@@ -7,6 +7,9 @@ package org.clulab.reach.focusedreading.reinforcement_learning.states
   * Contains the state representation data structure and related code for Focused Reading
   */
 
+import focusedreading.agents.FocusedReadingStage
+
+import collection.mutable
 import org.sarsamora.states.State
 
 object RankBin extends Enumeration {
@@ -19,7 +22,7 @@ object RankBin extends Enumeration {
     values.map{
       v =>
         val is = if(v == b) 1.0 else 0.0
-        (s"$prefix-${v.toString}" -> is)
+        s"$prefix-${v.toString}" -> is
     }.toMap
   }
 }
@@ -36,8 +39,9 @@ object RankBin extends Enumeration {
   * @param pbIterationIntroduction Iteration # in which PB was introduced to the KB graph
   * @param paUngrounded Whether PA has a grounding ID (not a UAZ id generated autimatically by REACH)
   * @param pbUngrounded Whether PB has a grounding ID (not a UAZ id generated autimatically by REACH)
-  * @param exploreIRScore IR aggregated score of the exploration IR query
-  * @param exploitIRScore IR aggregated score of the exploritation IR query
+  * @param exploreFewIRScores IR scores of the exploration IR query
+  * @param exploreManyIRScores IR scores of the exploration IR query
+  * @param exploitIRScores IR scores of the exploritation IR query
   */
 case class FocusedReadingState(paRank:Double,
                                pbRank:Double,
@@ -49,35 +53,25 @@ case class FocusedReadingState(paRank:Double,
                                pbIterationIntroduction:Int,
                                paUngrounded:Boolean,
                                pbUngrounded:Boolean,
-                               exploreIRScore:Double,
-                               exploitIRScore:Double
+                               exploreFewIRScores:Seq[Float],
+                               exploreManyIRScores:Seq[Float],
+                               exploitIRScores:Seq[Float],
+                               unchangedIterations:Int,
+                               normalizationParameters: Option[NormalizationParameters]
                               ) extends State{
 
-  override def hashCode(): Int = {
-    // TODO: Automatically calculate this using reflection
-    s"$paRank-$pbRank-$iteration-$paQueryLogCount-$pbQueryLogCount-$sameComponent-$paIterationIntroduction-$pbIterationIntroduction--$paUngrounded-$pbUngrounded".hashCode
-  }
+  // Aggregate the scores
+  val exploreFew: (Float, Float, Float) = aggregateIRScores(exploreFewIRScores)
+  val exploreMany: (Float, Float, Float) = aggregateIRScores(exploreManyIRScores)
+  val exploit: (Float, Float, Float) = aggregateIRScores(exploitIRScores)
 
-  override def equals(obj: scala.Any): Boolean = {
-    // TODO: Automatically calculate this using reflection
-    if(obj.getClass == this.getClass){
-      val that = obj.asInstanceOf[FocusedReadingState]
-      if(paRank == that.paRank
-        && pbRank == that.pbRank
-        && iteration == that.iteration
-        && paQueryLogCount == that.paQueryLogCount
-        && pbQueryLogCount == that.pbQueryLogCount
-        && sameComponent == that.sameComponent
-        && paIterationIntroduction == that.paIterationIntroduction
-        && pbIterationIntroduction == that.pbIterationIntroduction
-        && exploreIRScore == that.exploitIRScore
-        && exploitIRScore == that.exploitIRScore)
-        true
-      else
-        false
-    }
+  private def aggregateIRScores(scores:Seq[Float]):(Float, Float, Float) = {
+    if(scores.isEmpty)
+      (0.0f, 0.0f, 0.0f)
     else{
-      false
+      (scores.min,
+        scores.max,
+        scores.sum / scores.size)
     }
   }
 
@@ -86,7 +80,9 @@ case class FocusedReadingState(paRank:Double,
     * @return Map of feature names -> feature values
     */
   override def toFeatures():Map[String, Double] = {
-    Map(
+
+
+    val featureValues = Map[String, Double](
       "iteration" -> iteration.toDouble,
       "paQueryLogCount" -> paQueryLogCount.toDouble,
       "pbQueryLogCount" -> pbQueryLogCount.toDouble,
@@ -94,11 +90,83 @@ case class FocusedReadingState(paRank:Double,
       "paIterationIntroduction" -> paIterationIntroduction.toDouble,
       "pbIterationIntroduction" -> pbIterationIntroduction.toDouble,
       "paRank" -> paRank,
-      "pbRank" -> pbRank
-      //"exploreIRScore" -> exploreIRScore,
-      //"exploitIRScore" -> exploitIRScore
-      //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
-      //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
+      "pbRank" -> pbRank,
+      "exploreFewIRScore_min" -> exploreFew._1,
+      "exploreFewIRScore_max" -> exploreFew._2,
+      "exploreFewIRScore_mean" -> exploreFew._3,
+      "exploreManyIRScore_min" -> exploreMany._1,
+      "exploreManyIRScore_max" -> exploreMany._2,
+      "exploreManyIRScore_mean" -> exploreMany._3,
+      "exploitIRScore_min" -> exploit._1,
+      "exploitIRScore_max" -> exploit._2,
+      "exploitIRScore_mean" -> exploit._3,
+      "unchangedIterations" -> unchangedIterations,
+      "paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
+      "pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")
+
+
+    // Keep trak of the feature values
+    FocusedReadingState.recordObsevation(featureValues)
+
+    // Normalize if requested
+    val retVal = this.normalizationParameters match {
+      case Some(parameters) => parameters.normalize(featureValues)
+      case None => featureValues
+    }
+
+    retVal
+  }
+}
+
+/**
+  * Companion object to the FocusedReadingState class
+  */
+object FocusedReadingState {
+
+  val featureValueObservations = new mutable.HashMap[String, mutable.ArrayBuffer[Double]]()
+
+  def recordObsevation(values:Map[String, Double]): Unit ={
+    for((k, v) <- values){
+      // Lazily create the array buffer for the feature
+      if(!featureValueObservations.contains(k)){
+        featureValueObservations += k -> new mutable.ArrayBuffer[Double]()
+      }
+      // Log the feature value
+      featureValueObservations(k) += v
+    }
+  }
+
+  /**
+    * Computes the feature ranges out of the observed feature values during the run
+    * @return Feature ranges
+    */
+  def observedFeatureRanges():Map[String, (Double, Double)] = {
+    Map() ++ featureValueObservations map {
+      case (k, v) =>
+        k -> (v.min, v.max)
+    }
+  }
+
+  def featureNames:Set[String] = {
+    val dummyState = new FocusedReadingState(
+      0,
+      0,
+      0,
+      0,
+      0,
+      true,
+      0,
+      0,
+      true,
+      true,
+      Seq(),
+      Seq(),
+      Seq(),
+      0,
+      None
+    )
+
+    dummyState.toFeatures().keySet
   }
 }

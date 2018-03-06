@@ -1,4 +1,4 @@
-package org.clulab.reach.focusedreading
+package focusedreading
 
 import java.io.File
 

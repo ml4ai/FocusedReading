@@ -1,11 +1,13 @@
-package org.clulab.focusedreading.agents
+package focusedreading.agents
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.ie.IEStrategy
-import org.clulab.reach.focusedreading.ir.{IRStrategy, Query}
-import org.clulab.reach.focusedreading.models._
-import org.clulab.reach.focusedreading.tracing.IterativeStep
-import org.clulab.reach.focusedreading.{Connection, Participant, ParticipantChoosingStrategy}
+import focusedreading.pc_strategies.ParticipantChoosingStrategy
+import focusedreading.ie.IEStrategy
+import focusedreading.ir.{IRStrategy, Query}
+import focusedreading.models._
+import focusedreading.tracing.IterativeStep
+import focusedreading.{Connection, Participant}
 
 import scala.collection.mutable
 import scalax.collection.edge.LDiEdge
@@ -34,6 +36,10 @@ object FocusedReadingStage extends Enumeration{
   *  - ParticipantChoosingStrategy: Specifies how to implement the strategies to chose endpoints to perform IR
   */
 trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with ParticipantChoosingStrategy {
+
+  val mdpConfig = ConfigFactory.load().getConfig("MDP")
+  val maxIterations = mdpConfig.getInt("maxIterations")
+  val maxUnchangedIterations = mdpConfig.getInt("maxUnchangedIterations")
 
   // This is the KB graph which will be grown iteratively. This is an abstract field and must be implemented on the
   // concrete class inheriting the trait
@@ -104,7 +110,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
     }
     // Repeat the process until it is finished
-    while(!hasFinished(source, destination, this.model))
+    while(!hasFinished(source, destination, this.model, true))
     logger.info(s"Focused search finished after $iterationNum iterations")
   }
 
@@ -115,12 +121,12 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
     * @param model KB graph grown during the FR process
     * @return whether the search process has finished
     */
-  def hasFinished(source:Participant, destination:Participant, model:SearchModel):Boolean = {
+  def hasFinished(source:Participant, destination:Participant, model:SearchModel, mutate:Boolean):Boolean = {
     // If there is a success stop condition, defined below, then stop the process
     if(successStopCondition(source, destination, model).isDefined)
       true
     // If there is a failure stop condition, defined below, then stop the process
-    else if(failureStopCondition(source, destination, model))
+    else if(failureStopCondition(source, destination, model, mutate))
       true
     // If there's no stop condition at all, don't stop the process
     else
@@ -146,14 +152,23 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
     * @param source node in model
     * @param destination node in model
     * @param model KB graph grown during the search process
+    * @param mutate Whether to tick up the iteration number
     * @return Whether the FR process has failed
     */
   def failureStopCondition(source:Participant,
                            destination:Participant,
-                           model:SearchModel):Boolean
+                           model:SearchModel,
+                           mutate:Boolean):Boolean
 
 
-  // TODO: Write docstring for this method
+
+  /**
+    * Select a query strategy anchored on the parameters
+    * @param source Anchor participant
+    * @param destination Anchor participant
+    * @param model Search graph
+    * @return Resulting instance of query strategy
+    */
   def choseQuery(source:Participant, destination:Participant, model:SearchModel):Query
 
   /**
@@ -187,6 +202,7 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
 
   var (nodesCount, edgesCount) = (0, 0)
   var (prevNodesCount, prevEdgesCount) = (0, 0)
+  var unchangedIterations = 0
 
   /**
     * Succeeds when at least one path is present betwen source and destination. If it exists, we can find it efficiently
@@ -211,20 +227,32 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
     * @param source node in model
     * @param destination node in model
     * @param model KB graph grown during the search process
+    * @param persist Whether to tick up the iteration number
     * @return Whether the FR process has failed
     */
   override def failureStopCondition(source: Participant,
                                     destination: Participant,
-                                    model: SearchModel):Boolean = {
-    // TODO: Parameterize this number into a configuration file
-    if(this.iterationNum >= 10)
+                                    model: SearchModel,
+                                    persist: Boolean):Boolean = {
+    if(this.iterationNum >= maxIterations)
       true
-    else if(iterationNum > 0 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
-      logger.info("The model didn't change.")
-      true
+    else if(iterationNum > 1 && (nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
+      // If the model didn't change, increase the unchanged iterations counter
+      if(persist) {
+        unchangedIterations += 1
+
+        logger.info(s"The model didn't change $unchangedIterations times")
+      }
+      if(unchangedIterations >= maxUnchangedIterations)
+        true
+      else
+        false
     }
-    else
+    else {
+      // Reset the counter of unchanged iterations
+      unchangedIterations = 0
       false
+    }
   }
 
   /**
@@ -249,44 +277,3 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
   }
 
 }
-
-//abstract class MultiplePathsAgent(participantA:Participant, participantB:Participant, val maxIdleIterations:Int = 10)
-//  extends SimplePathAgent(participantA, participantB){
-//
-//  var noChangeIterations = 0
-//  var prevSolution:Seq[Seq[Connection]] = Seq()
-//
-//  private def sameAs(a:Seq[Seq[Connection]], b:Seq[Seq[Connection]]):Boolean = {
-//    if(a.size != b.size)
-//      false
-//    else{
-//      true
-//    }
-//  }
-//
-//  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel) = {
-//    val allPaths = model.allPaths(source, destination).toSeq
-//
-//    if(sameAs(allPaths, prevSolution))
-//      noChangeIterations += 1
-//    else
-//      noChangeIterations = 0
-//
-//    if(allPaths.nonEmpty && (allPaths.size >= 10 || this.noChangeIterations == maxIdleIterations))
-//      Some(allPaths)
-//    else
-//      None
-//  }
-//
-//  override def failureStopCondition(source: Participant, destination: Participant, model: SearchModel): Boolean = {
-//    if(this.noChangeIterations >= 10)
-//      true
-//    else if((nodesCount, edgesCount) == (prevNodesCount, prevEdgesCount)){
-//      logger.info("The model didn't change.")
-//      true
-//    }
-//    else
-//      false
-//  }
-//
-//}

@@ -1,15 +1,18 @@
-package org.clulab.reach.focusedreading.ie
+package focusedreading.ie
 
-import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
-import org.clulab.reach.focusedreading.{Connection, Participant}
+import focusedreading.sqlite.SQLiteQueries
+import focusedreading.{Connection, Participant}
+import com.typesafe.config.{Config, ConfigFactory}
 
 /**
   * Created by enrique on 12/03/17.
   */
 trait SQLIteIEStrategy extends IEStrategy{
 
-  //val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/interactions.sqlite")
-  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite")
+  val config: Config = ConfigFactory.load()
+
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val daIE = new SQLiteQueries(sqlitePath)
 
   override def informationExtraction(pmcids: Iterable[String]):Iterable[Connection] = {
 
@@ -32,13 +35,12 @@ trait SQLIteIEStrategy extends IEStrategy{
 
     // Instantiate interaction objects
     val connections = interactions map {
-      c =>
-        new Connection(Participant("", c._1), Participant("", c._2), c._3, c._5, c._6)
+      c => Connection(Participant("", c._1), Participant("", c._2), c._3, c._5, c._6)
     }
 
     connections
   }
 
 
-  override def getEvidence(connection: Connection) = daIE.fetchEvidence(connection)
+  override def getEvidence(connection: Connection): Iterable[String] = daIE.fetchEvidence(connection)
 }

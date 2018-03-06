@@ -1,27 +1,29 @@
-package org.clulab.reach.focusedreading.executable
+package focusedreading.executable
 
-import java.io.{BufferedWriter, File, FileOutputStream, FileWriter}
-import java.io._
+import java.io.{BufferedWriter, FileOutputStream, FileWriter, _}
 import java.nio.file.Paths
 
-import org.apache.commons.io.FileUtils
-import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
-import org.clulab.reach.focusedreading.executable.SimplePath.{args, logger}
-import org.clulab.reach.focusedreading.tracing.AgentRunTrace
-import org.json4s.native.JsonMethods.{pretty, render}
+import com.typesafe.scalalogging.LazyLogging
+import focusedreading.agents.{PolicySearchAgent, SearchAgent}
+import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
+import focusedreading.sqlite.SQLiteQueries
+import focusedreading.tracing.AgentRunTrace
+import focusedreading.{Connection, Participant}
+import org.sarsamora.policies._
+import com.typesafe.config.ConfigFactory
+import focusedreading.reinforcement_learning.states.NormalizationParameters
 
 import scala.collection.mutable
-import com.typesafe.scalalogging.LazyLogging
-import org.sarsamora.actions.Action
-import org.clulab.reach.focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
-import org.clulab.reach.focusedreading.sqlite.SQLiteQueries
-import org.sarsamora.policies._
 
 /**
   * Created by enrique on 03/04/17.
   */
-object SimplePathRL extends App with LazyLogging{
+object Testing extends App with LazyLogging{
+
+  // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
+  val config = ConfigFactory.load()
+  val testingConfig = config.getConfig("testing")
+  val outputConfig = testingConfig.getConfig("output")
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
@@ -32,8 +34,10 @@ object SimplePathRL extends App with LazyLogging{
   }
 
 
-  // The first argument is the input file
-  val dataSet:Iterable[Seq[String]] = io.Source.fromFile(args(0)).getLines
+
+  val inputPath = testingConfig.getString("inputFile")
+
+  val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
     .map{
       s =>
         val t = s.split("\t").toSeq
@@ -56,9 +60,9 @@ object SimplePathRL extends App with LazyLogging{
 
   /***
     * Prints the sentences that back the evidence found
-    * @param path
+    * @param path Connections that comprise the path
     */
-  def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter) = {
+  def printEvidence(path: Seq[Connection], agent:SearchAgent, writer:OutputStreamWriter): Unit = {
     val evidence:Seq[Iterable[String]] = path map agent.getEvidence
 
     writer.write(s"${path.map(_.toString(humanFriendly = true)).mkString(" - ")}\n")
@@ -85,7 +89,7 @@ object SimplePathRL extends App with LazyLogging{
 
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
 
-  val writer = new OutputStreamWriter(new FileOutputStream("evidence.txt"))
+  val writer = new OutputStreamWriter(new FileOutputStream(outputConfig.getString("evidence")))
 
   for((datum, ix) <- dataSet.zipWithIndex){
 
@@ -99,8 +103,28 @@ object SimplePathRL extends App with LazyLogging{
     logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
-    val policy = Policy.loadPolicy("learnt_policy.json", valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
-    val agent = new PolicySearchAgent(participantA, participantB, policy)
+    val policyPath = testingConfig.getString("policyFile")
+    val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
+
+
+    // Instantiate the normalization parameters, if necessary
+    val normalizationConfig = testingConfig.getConfig("normalization")
+
+    val normalizationParameters = normalizationConfig.getBoolean("enabled") match {
+      case true => {
+        val lower = normalizationConfig.getDouble("lower")
+        val upper = normalizationConfig.getDouble("upper")
+        val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+
+        val parameters = NormalizationParameters(lower, upper, ranges)
+
+        Some(parameters)
+      }
+      case false => None
+    }
+    /////////////////////////////////////////////////////////
+
+    val agent = new PolicySearchAgent(participantA, participantB, policy, normalizationParameters = normalizationParameters)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
 
@@ -240,7 +264,7 @@ object SimplePathRL extends App with LazyLogging{
   }
 
 
-  val averageRuntime = (times.sum / times.size)
+  val averageRuntime = times.sum / times.size
 
   // Store info for bootstrapping
 
@@ -280,18 +304,18 @@ object SimplePathRL extends App with LazyLogging{
   logger.info(s"Same outcome: $same")
   logger.info(s"Different outcome: $different")
 
-  val osw = new BufferedWriter(new FileWriter("rl_bootstrap.txt"))
+  val osw = new BufferedWriter(new FileWriter(outputConfig.getString("bootstrap")))
 
   bootstrapLines foreach osw.write
 
-  osw.close
+  osw.close()
 
   writer.close()
 
   // Write down the annotations
   // First, translate the interaction pairs to their PK in the SQLite DB
-  // TODO: Parameterize the connection string
-  val daIE = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite")
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val daIE = new SQLiteQueries(sqlitePath)
   val mappedInteractions = interactionsToAnnotate.map{
     case(key, value) =>
       val id = daIE.getInteractionId(key)
@@ -299,7 +323,7 @@ object SimplePathRL extends App with LazyLogging{
   }
 
   // Generate the lines and write them down
-  val annotationSw = new BufferedWriter(new FileWriter("to_annotate.txt"))
+  val annotationSw = new BufferedWriter(new FileWriter(outputConfig.getString("annotations")))
   mappedInteractions foreach {
     case (key, value) =>
       val cols = value.mkString(",")

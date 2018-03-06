@@ -1,10 +1,10 @@
-package org.clulab.reach.focusedreading.sqlite
+package focusedreading.sqlite
 
 import java.sql.DriverManager
 
 import collection.mutable
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.{Connection, Participant}
+import focusedreading.{Connection, Participant}
 
 /**
   * Created by enrique on 26/02/17.

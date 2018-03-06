@@ -1,25 +1,29 @@
-package org.clulab.reach.focusedreading.executable
+package focusedreading.executable
 
-import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.{Connection, Participant}
-import org.clulab.focusedreading.agents._
 import java.io.{BufferedWriter, File, FileWriter}
 import java.nio.file.Paths
 
+import com.typesafe.scalalogging.LazyLogging
+import org.apache.commons.io.FileUtils
+import focusedreading.agents._
+import focusedreading.tracing.AgentRunTrace
+import focusedreading.{Connection, Participant}
 import org.json4s.JsonDSL._
-import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import scala.collection.JavaConverters._
-import org.json4s.native.JsonMethods._
-import org.apache.commons.io.{FileUtils, FilenameUtils}
-import org.clulab.reach.focusedreading.tracing.AgentRunTrace
-
 import scala.collection.mutable
+
+import com.typesafe.config.ConfigFactory
 
 /**
   * Created by enrique on 12/03/17.
   */
-object SimplePath extends App with LazyLogging{
+object Baseline extends App with LazyLogging{
+
+    // Read the configuration parameters
+    // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
+    val config = ConfigFactory.load()
 
 
     def getParticipants(path:List[Connection]):List[String] = {
@@ -53,7 +57,8 @@ object SimplePath extends App with LazyLogging{
     }
 
     // The first argument is the input file
-    val dataSet:Iterable[Seq[String]] = io.Source.fromFile(args(0)).getLines
+    val inputPath = config.getConfig("baseline").getString("inputFile")
+    val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
       .map{
         s =>
           val t = s.split("\t").toSeq

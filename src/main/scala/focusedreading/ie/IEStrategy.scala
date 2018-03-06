@@ -1,7 +1,7 @@
-package org.clulab.reach.focusedreading.ie
+package focusedreading.ie
 
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.reach.focusedreading.Connection
+import focusedreading.Connection
 
 /**
   * Created by enrique on 20/02/17.

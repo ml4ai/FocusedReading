@@ -1,11 +1,11 @@
-package org.clulab.reach.focusedreading.ir
+package focusedreading.ir
 
 import java.io.File
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.queryparser.classic.QueryParserBase
-import org.clulab.reach.focusedreading.Participant
+import focusedreading.Participant
 import org.clulab.reach.grounding.ReachKBUtils
 //import org.clulab.reach.indexer.NxmlSearcher
 import org.clulab.utils.Serializer
@@ -20,7 +20,7 @@ object QueryStrategy extends Enumeration{
   val Singleton, Disjunction, Conjunction, Spatial, Cascade = Value
 }
 
-case class Query(val strategy:QueryStrategy.Strategy, val A:Participant, val B:Option[Participant])
+case class Query(strategy:QueryStrategy.Strategy, count:Int, A:Participant, B:Option[Participant])
 
 
 /**
@@ -101,7 +101,22 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
     fetchHits(hits)
   }
 
-  def binaryDisonjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+  def binaryDisjunctionQuery2(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+    // Build a query for lucene
+    val aSynonyms = resolveParticipant(a.id)
+    val bSynonyms = resolveParticipant(b.id)
+
+    if(aSynonyms.isEmpty || bSynonyms.isEmpty){
+      return Set()
+    }
+
+    var paRes = this.singletonQuery(a, totalHits)
+    var pbRes = this.singletonQuery(b, totalHits)
+
+    paRes ++ pbRes
+  }
+
+  def binaryDisjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -184,7 +199,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"conjunction:${a.id}:${b.id}"
+    val queryKey = s"conjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -209,8 +224,8 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
 
   }
 
-  override def binaryDisonjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"disjunction:${a.id}:${b.id}"
+  override def binaryDisjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    val queryKey = s"disjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -223,7 +238,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
     }
     else{
         // Query lucene
-      val result= super.binaryDisonjunctionQuery(a, b, totalHits)
+      val result= super.binaryDisjunctionQuery(a, b, totalHits)
       // Store the results on Redis
       result foreach {
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
@@ -235,7 +250,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binarySpatialQuery(a: Participant, b: Participant, k: Int, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"spatial:${a.id}:${b.id}:$k"
+    val queryKey = s"spatial:${a.id}:${b.id}:$k:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
@@ -260,7 +275,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def singletonQuery(p: Participant, totalHits: Int): Iterable[(String, Float)] = {
-    val queryKey = s"singleton:${p.id}"
+    val queryKey = s"singleton:${p.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
 
