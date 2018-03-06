@@ -3,7 +3,7 @@ package focusedreading.pc_strategies
 import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.models.SearchModel
-import focusedreading.reinforcement_learning.actions.{ExploitEndpoints, ExploreEndpoints}
+import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
@@ -123,14 +123,14 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
     // Choose the action
 //    val action = policy.selectAction(combinedState, PolicySearchAgent.getActiveEndpointActions.toSeq)
-  val action = policy.selectAction(observeState, PolicySearchAgent.getActiveEndpointActions.toSeq)
+  val action = policy.selectAction(observeState, PolicySearchAgent.usedActions)
 
     lastActionChosen = Some(action)
 
     val chosenEndpoints = action match {
-      case _:ExploreEndpoints =>
+      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
         exploreEndpoints
-      case _:ExploitEndpoints =>
+      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploreManyQuery()).contains(ac) =>
         exploitEndpoints
     }
 

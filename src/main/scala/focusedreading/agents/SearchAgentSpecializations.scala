@@ -56,7 +56,7 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   */
 class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
-  with SQLIRStrategy
+  with LuceneIRStrategy
   with SQLIteIEStrategy {
 
 

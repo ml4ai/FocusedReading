@@ -101,7 +101,22 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
     fetchHits(hits)
   }
 
-  def binaryDisonjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+  def binaryDisjunctionQuery2(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+    // Build a query for lucene
+    val aSynonyms = resolveParticipant(a.id)
+    val bSynonyms = resolveParticipant(b.id)
+
+    if(aSynonyms.isEmpty || bSynonyms.isEmpty){
+      return Set()
+    }
+
+    var paRes = this.singletonQuery(a, totalHits)
+    var pbRes = this.singletonQuery(b, totalHits)
+
+    paRes ++ pbRes
+  }
+
+  def binaryDisjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -209,7 +224,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
 
   }
 
-  override def binaryDisonjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+  override def binaryDisjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
     val queryKey = s"disjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
@@ -223,7 +238,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
     }
     else{
         // Query lucene
-      val result= super.binaryDisonjunctionQuery(a, b, totalHits)
+      val result= super.binaryDisjunctionQuery(a, b, totalHits)
       // Store the results on Redis
       result foreach {
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)

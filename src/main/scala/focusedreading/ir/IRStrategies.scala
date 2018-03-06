@@ -12,14 +12,14 @@ trait IRStrategy {
 
 
 trait LuceneIRStrategy extends IRStrategy{
-  val maxHits = 200
+  val maxHits = 100
 
   val luceneQuerier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
 
   override def informationRetrival(query: Query) = {
     val pmcids:Iterable[(String, Float)] = query.strategy match {
       case Singleton => luceneQuerier.singletonQuery(query.A, maxHits)
-      case Disjunction => luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+      case Disjunction => luceneQuerier.binaryDisjunctionQuery2(query.A, query.B.get, maxHits)
       case Conjunction => luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
       case Spatial => luceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, maxHits)
       case Cascade => {
@@ -27,7 +27,7 @@ trait LuceneIRStrategy extends IRStrategy{
         if(results.isEmpty){
           results = luceneQuerier.binaryConjunctionQuery(query.A, query.B.get, maxHits)
           if(results.isEmpty)
-            results = luceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, maxHits)
+            results = luceneQuerier.binaryDisjunctionQuery2(query.A, query.B.get, maxHits)
         }
         results
       }
@@ -73,7 +73,7 @@ trait RedisIRStrategy extends IRStrategy{
 
     val pmcids:Iterable[(String, Float)] = query.strategy match {
       case Singleton => redisLuceneQuerier.singletonQuery(query.A, query.count)
-      case Disjunction => redisLuceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, query.count)
+      case Disjunction => redisLuceneQuerier.binaryDisjunctionQuery(query.A, query.B.get, query.count)
       case Conjunction => redisLuceneQuerier.binaryConjunctionQuery(query.A, query.B.get, query.count)
       case Spatial => redisLuceneQuerier.binarySpatialQuery(query.A, query.B.get, 20, query.count)
       case Cascade => {
@@ -81,7 +81,7 @@ trait RedisIRStrategy extends IRStrategy{
         if(results.isEmpty){
           results = redisLuceneQuerier.binaryConjunctionQuery(query.A, query.B.get, query.count)
           if(results.isEmpty)
-            results = redisLuceneQuerier.binaryDisonjunctionQuery(query.A, query.B.get, query.count)
+            results = redisLuceneQuerier.binaryDisjunctionQuery(query.A, query.B.get, query.count)
         }
         results
       }

@@ -38,8 +38,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
 
 
-  var stage:FocusedReadingStage.Value = FocusedReadingStage.EndPoints
-
   this.introductions += participantA -> 0
   this.introductions += participantB -> 0
 
@@ -59,8 +57,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     // Keep track of the chosen actions
     actionCounters(this.lastActionChosen.get.toString) += 1
 
-    // Set the stage to query after choosing the endpoints
-    stage = FocusedReadingStage.Query
 
     endpoints
   }
@@ -119,7 +115,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
     queryLog += Tuple2(a, b)
 
-    val possibleActions:Seq[Action] = PolicySearchAgent.getActiveQueryActions.toSeq
+    val possibleActions:Seq[Action] = PolicySearchAgent.usedActions
 
     // Create state
     val state = this.observeState
@@ -130,8 +126,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     // Keep track of the action selection
     actionCounters(action.toString) += 1
 
-    // Set the process stage to endpoint
-    stage = FocusedReadingStage.EndPoints
 
     queryActionToStrategy(action, a, b)
   }
@@ -190,14 +184,14 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
       FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
         pbQueryLogCount, sameComponent, paIntro, pbIntro, paUngrounded,
         pbUngrounded, exploreFewIRScores, exploreManyIRScores,
-        exploitIRScores, unchangedIterations, stage, normalizationParameters)
+        exploitIRScores, unchangedIterations, normalizationParameters)
     }
     else{
 
       FocusedReadingState(0, 0, iterationNum, 0,
         0, false, 0, 0, false,
         false, Seq(0), Seq(0),
-        Seq(0), 0, stage, normalizationParameters)
+        Seq(0), 0, normalizationParameters)
     }
   }
 
@@ -274,8 +268,6 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     // Increment the iteration count
     iterationNum += 1
 
-    // Set the stage to endpoint
-    stage = FocusedReadingStage.EndPoints
 
 
     // Compute the reward shaping, if on
@@ -383,11 +375,11 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   private def queryActionToStrategy(action: Action, a: Participant, b: Participant) = {
 
     action match {
-      case _: ExploitQuery =>
+      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploreEndpoints_ExploitQuery()).contains(ac) =>
         Query(Conjunction, fewPapers, a, Some(b))
-      case _: ExploreManyQuery =>
+      case ac if Seq(ExploitEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
         Query(Disjunction, manyPapers, a, Some(b))
-      case _: ExploreFewQuery =>
+      case ac if Seq(ExploitEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) =>
         Query(Disjunction, manyPapers, a, Some(b))
       case _ =>
         throw new RuntimeException("Got an invalid action type for the query stage")
@@ -400,8 +392,8 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
     val selectedChooser = action match {
-      case _:ExploitEndpoints => exploitChooser
-      case _:ExploreEndpoints => exploreChooser
+      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery()).contains(ac) => exploitChooser
+      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) => exploreChooser
       case _ => throw new RuntimeException("Invalid action for the ENDPOINTS stage")
     }
 
@@ -414,23 +406,21 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
       queryLog += Tuple2(a, b)
     }
 
-    stage = FocusedReadingStage.Query
-
     0.0 // This reward is zero because this is an intermediate step of the FR loop
     // The actual signal comes after the query stage whether it found a path
   }
 
 
   // Public methods
-  def executePolicy(action:Action, persist:Boolean = true):Double = (stage: @unchecked) match {
-    case FocusedReadingStage.Query => executePolicyQueryStage(action, persist)
-    case FocusedReadingStage.EndPoints => executePolicyEndpointsStage(action, persist)
+  def executePolicy(action:Action, persist:Boolean = true):Double =  {
+    executePolicyEndpointsStage(action, persist)
+    /*case FocusedReadingStage.Query => */
+    executePolicyQueryStage(action, persist)
+    /*case FocusedReadingStage.EndPoints => */
+
   }
 
-  def possibleActions(): Seq[Action] = (stage: @unchecked) match {
-    case FocusedReadingStage.EndPoints => PolicySearchAgent.getActiveEndpointActions.toSeq
-    case FocusedReadingStage.Query => PolicySearchAgent.getActiveQueryActions.toSeq
-  }
+  def possibleActions(): Seq[Action] = PolicySearchAgent.usedActions
   /////////////////
 
 
@@ -442,30 +432,33 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   */
 object PolicySearchAgent{
   // All the possible actions
-  val usedActions = Seq(ExploitQuery(), ExploreManyQuery(), ExploreFewQuery(), ExploitEndpoints(), ExploreEndpoints())
+  val usedActions = Seq(ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploitQuery(),
+    ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploitQuery())
+
+  //Seq(ExploitQuery(), ExploreManyQuery(), ExploreFewQuery(), ExploitEndpoints(), ExploreEndpoints())
   val config = ConfigFactory.load()
   val elements = config.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
-  def getActiveActions:Set[Action] = getActiveEndpointActions ++ getActiveQueryActions
+  def getActiveActions:Set[Action] = usedActions.toSet//getActiveEndpointActions ++ getActiveQueryActions
 
-  def getActiveEndpointActions:Set[Action] = {
-
-    val activeActions:Set[Action] = elements.collect{
-      case "ExploitEndpoints" => ExploitEndpoints()
-      case "ExploreEndpoints" => ExploreEndpoints()
-    }
-
-    activeActions
-  }
-
-  def getActiveQueryActions:Set[Action] = {
-
-    val activeActions:Set[Action] = elements.collect{
-      case "ExploitQuery" => ExploitQuery()
-      case "ExploreManyQuery" => ExploreManyQuery()
-      case "ExploreFewQuery" => ExploreFewQuery()
-    }
-
-    activeActions
-  }
+//  def getActiveEndpointActions:Set[Action] = {
+//
+//    val activeActions:Set[Action] = elements.collect{
+//      case "ExploitEndpoints" => ExploitEndpoints()
+//      case "ExploreEndpoints" => ExploreEndpoints()
+//    }
+//
+//    activeActions
+//  }
+//
+//  def getActiveQueryActions:Set[Action] = {
+//
+//    val activeActions:Set[Action] = elements.collect{
+//      case "ExploitQuery" => ExploitQuery()
+//      case "ExploreManyQuery" => ExploreManyQuery()
+//      case "ExploreFewQuery" => ExploreFewQuery()
+//    }
+//
+//    activeActions
+//  }
 }

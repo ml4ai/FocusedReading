@@ -57,7 +57,6 @@ case class FocusedReadingState(paRank:Double,
                                exploreManyIRScores:Seq[Float],
                                exploitIRScores:Seq[Float],
                                unchangedIterations:Int,
-                               stage:FocusedReadingStage.Value,
                                normalizationParameters: Option[NormalizationParameters]
                               ) extends State{
 
@@ -82,30 +81,28 @@ case class FocusedReadingState(paRank:Double,
     */
   override def toFeatures():Map[String, Double] = {
 
-    val isQueryStage = 1.0 //if(stage == FocusedReadingStage.Query) 1.0 else 0.0
-    val isEndpointsStage = if(stage == FocusedReadingStage.EndPoints) 1.0 else 0.0
 
     val featureValues = Map[String, Double](
       "iteration" -> iteration.toDouble,
-      "paQueryLogCount" -> paQueryLogCount.toDouble * isQueryStage,
-      "pbQueryLogCount" -> pbQueryLogCount.toDouble * isQueryStage,
-      "sameComponent" ->  (sameComponent match{ case true => 1.0; case false => 0.0 }) * isQueryStage,
-      "paIterationIntroduction" -> paIterationIntroduction.toDouble * isQueryStage,
-      "pbIterationIntroduction" -> pbIterationIntroduction.toDouble * isQueryStage,
-      "paRank" -> paRank  * isQueryStage,
-      "pbRank" -> pbRank  * isQueryStage
-//      "exploreFewIRScore_min" -> exploreFew._1  * isQueryStage,
-//      "exploreFewIRScore_max" -> exploreFew._2  * isQueryStage,
-//      "exploreFewIRScore_mean" -> exploreFew._3  * isQueryStage,
-//      "exploreManyIRScore_min" -> exploreMany._1  * isQueryStage,
-//      "exploreManyIRScore_max" -> exploreMany._2  * isQueryStage,
-//      "exploreManyIRScore_mean" -> exploreMany._3  * isQueryStage,
-//      "exploitIRScore_min" -> exploit._1  * isQueryStage,
-//      "exploitIRScore_max" -> exploit._2  * isQueryStage,
-//      "exploitIRScore_mean" -> exploit._3  * isQueryStage,
-//      "unchangedIterations" -> unchangedIterations
-      //"paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
-      //"pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
+      "paQueryLogCount" -> paQueryLogCount.toDouble,
+      "pbQueryLogCount" -> pbQueryLogCount.toDouble,
+      "sameComponent" ->  (sameComponent match{ case true => 1.0; case false => 0.0 }),
+      "paIterationIntroduction" -> paIterationIntroduction.toDouble,
+      "pbIterationIntroduction" -> pbIterationIntroduction.toDouble,
+      "paRank" -> paRank,
+      "pbRank" -> pbRank,
+      "exploreFewIRScore_min" -> exploreFew._1,
+      "exploreFewIRScore_max" -> exploreFew._2,
+      "exploreFewIRScore_mean" -> exploreFew._3,
+      "exploreManyIRScore_min" -> exploreMany._1,
+      "exploreManyIRScore_max" -> exploreMany._2,
+      "exploreManyIRScore_mean" -> exploreMany._3,
+      "exploitIRScore_min" -> exploit._1,
+      "exploitIRScore_max" -> exploit._2,
+      "exploitIRScore_mean" -> exploit._3,
+      "unchangedIterations" -> unchangedIterations,
+      "paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
+      "pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
     )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")
 
 
@@ -167,7 +164,6 @@ object FocusedReadingState {
       Seq(),
       Seq(),
       0,
-      FocusedReadingStage.EndPoints,
       None
     )
 

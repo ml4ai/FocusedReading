@@ -67,7 +67,7 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 //  }
 
   override def finishedEpisode:Boolean ={
-    val ret = agent.stage == FocusedReadingStage.EndPoints && agent.hasFinished(participantA, participantB, agent.model, false)
+    val ret = agent.hasFinished(participantA, participantB, agent.model, false)
 
     // TODO: Clean this up or remove
     if(ret){
