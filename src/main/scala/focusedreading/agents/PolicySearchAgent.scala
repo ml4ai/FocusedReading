@@ -6,7 +6,9 @@ import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
 import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
 import focusedreading.models.{GFSModel, SearchModel}
-import focusedreading.pc_strategies.PolicyParticipantsStrategy
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
+//import focusedreading.pc_strategies.PolicyParticipantsStrategy
+import focusedreading.pc_strategies.new_age.ExploreStrategy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters, RankBin}
 import org.sarsamora.actions.Action
@@ -29,13 +31,18 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
                         val policy:Policy,
                         val referencePath:Option[Seq[Participant]] = None,
                         val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
-  with PolicyParticipantsStrategy
+  with ExploreStrategy //TODO: Reinstall policy participant strategy
   with SQLIRStrategy
   with SQLIteIEStrategy {
 
 
   // Fields
   val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
+  val queryLog = new mutable.ArrayBuffer[(Participant, Participant)]
+  val introductions:mutable.HashMap[Participant, Int] = new mutable.HashMap[Participant, Int]()
+  val references = new mutable.HashMap[(Participant, Participant, Boolean), Seq[String]]()
+  var lastActionChosen:Option[Action] = None
+
 
 
   this.introductions += participantA -> 0
@@ -48,17 +55,17 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   ////////////
 
   override def choseEndPoints(source: Participant, destination: Participant,
-                              previouslyChosen: Set[(Participant, Participant)],
-                              model: SearchModel): (Participant, Participant) = {
+                              colors: mutable.Map[Participant, Color],
+                              model: SearchModel): Seq[Participant] = {
 
     // Choose the endpoints with the policy
-    val endpoints = super.choseEndPoints(source, destination, previouslyChosen, model)
+    val chosen = super.choseEndPoints(source, destination, colors, model)
 
     // Keep track of the chosen actions
     actionCounters(this.lastActionChosen.get.toString) += 1
 
 
-    endpoints
+    chosen
   }
 
   override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
@@ -130,11 +137,11 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     queryActionToStrategy(action, a, b)
   }
 
-  override def observeState:State = {
+  def observeState:State = {
     fillState(this.model, iterationNum, queryLog, introductions)
   }
 
-  override def getIterationNum: Int = iterationNum
+  def getIterationNum: Int = iterationNum
 
   // Auxiliary methods
   private def fillState(model:SearchModel, iterationNum:Int,
@@ -392,12 +399,18 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
 
     val selectedChooser = action match {
-      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery()).contains(ac) => exploitChooser
-      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) => exploreChooser
+      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery()).contains(ac) => this //exploitChooser
+      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) => this //exploreChooser
       case _ => throw new RuntimeException("Invalid action for the ENDPOINTS stage")
     }
 
-    val (a, b) = selectedChooser.choseEndPoints(participantA, participantB, triedPairs.toSet, model)
+    val chosen = selectedChooser.choseEndPoints(participantA, participantB, colors, model)
+    val (a, b) = if(chosen.size == 1){
+      (chosen.head, chosen.head)
+    }
+    else{
+      (chosen.head, chosen.last)
+    }
     ////////
 
 
@@ -441,24 +454,4 @@ object PolicySearchAgent{
 
   def getActiveActions:Set[Action] = usedActions.toSet//getActiveEndpointActions ++ getActiveQueryActions
 
-//  def getActiveEndpointActions:Set[Action] = {
-//
-//    val activeActions:Set[Action] = elements.collect{
-//      case "ExploitEndpoints" => ExploitEndpoints()
-//      case "ExploreEndpoints" => ExploreEndpoints()
-//    }
-//
-//    activeActions
-//  }
-//
-//  def getActiveQueryActions:Set[Action] = {
-//
-//    val activeActions:Set[Action] = elements.collect{
-//      case "ExploitQuery" => ExploitQuery()
-//      case "ExploreManyQuery" => ExploreManyQuery()
-//      case "ExploreFewQuery" => ExploreFewQuery()
-//    }
-//
-//    activeActions
-//  }
 }

@@ -2,6 +2,7 @@ package focusedreading.pc_strategies
 
 import focusedreading.Participant
 import focusedreading.models.SearchModel
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
 
 import scala.collection.mutable
 
@@ -9,8 +10,8 @@ trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
 
 
   override def choseEndPoints(source:Participant,
-                     destination:Participant,
-                     previouslyChosen:Set[(Participant, Participant)],
+                     destination:Participant, colors:mutable.Map[Participant, Color],
+                     /*previouslyChosen:Set[(Participant, Participant)],*/
                      model:SearchModel) = {
 
 
@@ -42,18 +43,21 @@ trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
 
     do{
       endpoints = pickEndpoints(ssA, ssB)
-    }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && ssB.nonEmpty)
+      // TODO: Fix the line below
+    }while(!differentEndpoints(endpoints, Set()/*previouslyChosen*/) && ssA.nonEmpty && ssB.nonEmpty)
 
     // Fallback if there are no new nodes in the components
-    if(!differentEndpoints(endpoints, previouslyChosen)){
+    // TODO: Fix the line below
+    if(!differentEndpoints(endpoints, Set()/*previouslyChosen*/)){
       ssA.pushAll(sA map (_._2))
       do{
         endpoints = pickEndpoints(ssA, allNodes)
-      }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && allNodes.nonEmpty)
+        // TODO: Fix the line below
+      }while(!differentEndpoints(endpoints, Set()/*previouslyChosen*/) && ssA.nonEmpty && allNodes.nonEmpty)
     }
 
 
-    endpoints
+    Seq(endpoints._1, endpoints._2)
   }
 
 

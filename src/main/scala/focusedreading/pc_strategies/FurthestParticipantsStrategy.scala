@@ -2,6 +2,7 @@ package focusedreading.pc_strategies
 
 import focusedreading.Participant
 import focusedreading.models.SearchModel
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
 
 import scala.collection.mutable
 
@@ -10,8 +11,9 @@ trait FurthestParticipantsStrategy extends ParticipantChoosingStrategy{
   val distancesCache = new mutable.HashMap[Participant, Int]()
 
   override def choseEndPoints(source: Participant, destination: Participant,
-                              previouslyChosen: Set[(Participant, Participant)],
-                              model: SearchModel): (Participant, Participant) = {
+                              colors:mutable.Map[Participant, Color],
+                              /*previouslyChosen: Set[(Participant, Participant)],*/
+                              model: SearchModel): Seq[Participant] = {
 
     val sourceComponent = sortByDistance(model.getConnectedComponentOf(source).get.toSeq, source, model)
     val destComponent = sortByDistance(model.getConnectedComponentOf(destination).get.toSeq, destination, model)
@@ -27,9 +29,10 @@ trait FurthestParticipantsStrategy extends ParticipantChoosingStrategy{
 
     do{
       endpoints = pickEndpoints(ssA, ssB)
-    }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && ssB.nonEmpty)
+      // TODO: Fix the line below
+    }while(!differentEndpoints(endpoints, Set()/*previouslyChosen*/) && ssA.nonEmpty && ssB.nonEmpty)
 
-    endpoints
+    Seq(endpoints._1, endpoints._2)
   }
 
   private def sortByDistance(s:Seq[Participant], reference:Participant, model:SearchModel):Seq[Participant] = {

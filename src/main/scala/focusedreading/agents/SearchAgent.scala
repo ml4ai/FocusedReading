@@ -6,6 +6,7 @@ import focusedreading.pc_strategies.ParticipantChoosingStrategy
 import focusedreading.ie.IEStrategy
 import focusedreading.ir.{IRStrategy, Query}
 import focusedreading.models._
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
 import focusedreading.tracing.IterativeStep
 import focusedreading.{Connection, Participant}
 
@@ -50,6 +51,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
   // Record of the participant pairs used during the search process
   val triedPairs = new mutable.HashSet[(Participant, Participant)]
+  val colors = mutable.Map[Participant, Color]()
 
   // Debug information memory
   val trace = new mutable.ArrayBuffer[IterativeStep]
@@ -67,7 +69,13 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
       iterationNum += 1
       logger.info(s"Iteration #$iterationNum")
       // Select the nodes in the KB graph that will be used for IR
-      val (a, b) = choseEndPoints(source, destination, triedPairs.toSet, model)
+      val chosen = choseEndPoints(source, destination, colors, model)
+      val (a, b) = if(chosen.size == 1){
+        (chosen.head, chosen.head)
+      }
+      else{
+        (chosen.head, chosen.last)
+      }
       // Keep track of those nodes in the record
       triedPairs += Tuple2(a, b)
       // Chose a query strategy given the nodes and the current state of the KB graph

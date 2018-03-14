@@ -2,6 +2,7 @@ package focusedreading.pc_strategies
 
 import focusedreading.Participant
 import focusedreading.models.SearchModel
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
 
 import scala.collection.mutable
 
@@ -9,8 +10,9 @@ trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
   def participantIntroductions:mutable.HashMap[Participant, Int]
 
   override def choseEndPoints(source: Participant, destination: Participant,
-                              previouslyChosen: Set[(Participant, Participant)],
-                              model: SearchModel): (Participant, Participant) = {
+                              color:mutable.Map[Participant, Color],
+                              /*previouslyChosen: Set[(Participant, Participant)],*/
+                              model: SearchModel): Seq[Participant] = {
 
 
     // Uncomment for the simpler more effective implementation
@@ -25,9 +27,10 @@ trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
     val sourceChoices = possibleEndpoints.filter(p => sourceComponent.contains(p)).toSeq.sortBy(p => model.degree(p)).reverse
     val destChoices = possibleEndpoints.filter(p => destComponent.contains(p)).toSeq.sortBy(p => model.degree(p)).reverse
 
-    val endpoints = pickEndpoints(sourceChoices, destChoices, source, destination, previouslyChosen)
+    // TODO: Fix the line below
+    val endpoints = pickEndpoints(sourceChoices, destChoices, source, destination, Set()/*previouslyChosen*/)
 
-    endpoints
+    Seq(endpoints._1, endpoints._2)
     /////////////////////
 
   }

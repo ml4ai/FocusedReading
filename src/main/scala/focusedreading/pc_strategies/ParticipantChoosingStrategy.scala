@@ -2,6 +2,7 @@ package focusedreading.pc_strategies
 
 import focusedreading.Participant
 import focusedreading.models._
+import focusedreading.pc_strategies.ParticipantChoosingStrategy.Color
 import focusedreading.reinforcement_learning.actions._
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
@@ -15,9 +16,12 @@ import scala.collection.mutable
 trait ParticipantChoosingStrategy {
   def choseEndPoints(source:Participant,
                      destination:Participant,
-                     previouslyChosen:Set[(Participant, Participant)],
-                     model:SearchModel):(Participant, Participant)
+                     colors:mutable.Map[Participant, Color],
+                     //previouslyChosen:Set[(Participant, Participant)],
+                     model:SearchModel):Seq[Participant]
 
+
+  //// LEGACY
   /**
     * Checks wether there's a change from the latest endpoints
     */
@@ -47,4 +51,13 @@ trait ParticipantChoosingStrategy {
 
     (a, b)
   }
+  /////////////
+}
+
+object ParticipantChoosingStrategy{
+  object Color extends Enumeration{
+    val White, Gray, Black = Value
+  }
+
+  type Color = Color.Value
 }

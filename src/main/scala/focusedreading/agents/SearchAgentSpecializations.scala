@@ -4,7 +4,7 @@ import java.io.{FileOutputStream, OutputStreamWriter}
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.pc_strategies.{MostConnectedParticipantsStrategy, PolicyParticipantsStrategy}
+import focusedreading.pc_strategies.MostConnectedParticipantsStrategy
 import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
 import focusedreading.ir.QueryStrategy._
 import focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}

@@ -229,10 +229,10 @@ object Testing extends App with LazyLogging{
           actionCounts += k -> v
     }
 
-    agent.chosenEndpointsLog foreach {
-      x=>
-        ep += x
-    }
+//    agent.chosenEndpointsLog foreach {
+//      x=>
+//        ep += x
+//    }
 
     logger.info("")
   }
