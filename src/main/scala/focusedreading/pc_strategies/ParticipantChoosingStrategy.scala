@@ -12,12 +12,14 @@ import scala.collection.mutable
 /**
   * Created by enrique on 19/02/17.
   */
+
+object Color extends Enumeration {
+  type Color = Value
+  val White, Black = Value
+}
+
 trait ParticipantChoosingStrategy {
 
-  object Color extends Enumeration {
-    type Color = Value
-    val White, Black = Value
-  }
 
   import Color._
 

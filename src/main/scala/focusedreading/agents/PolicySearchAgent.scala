@@ -26,12 +26,42 @@ import scala.collection.mutable
   * @param referencePath Expert path to compute the reward shaping potential
   */
 class PolicySearchAgent(participantA:Participant, participantB:Participant,
-                        val policy:Policy,
+                        val policy:Option[Policy],
                         val referencePath:Option[Seq[Participant]] = None,
                         val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
   with PolicyParticipantsStrategy
   with SQLIRStrategy
   with SQLIteIEStrategy {
+
+
+  override def clone():PolicySearchAgent = {
+    val clone = new PolicySearchAgent(participantA, participantB, policy, referencePath, normalizationParameters)
+
+    clone.model = this.model.copy()
+    clone.actionCounters ++= this.actionCounters
+    clone.nodesCount = this.nodesCount
+    clone.edgesCount = this.edgesCount
+    clone.prevNodesCount = this.prevNodesCount
+    clone.prevEdgesCount = this.prevEdgesCount
+    clone.unchangedIterations = this.unchangedIterations
+
+    clone.iterationNum = clone.iterationNum
+    clone.triedPairs ++= this.triedPairs
+    clone.papersRead ++= this.papersRead
+    //clone.trace ++= this.trace
+
+    clone.references ++= this.references
+    clone.queryLog ++= this.queryLog
+    clone.introductions ++= this.introductions
+    clone.lastActionChosen = this.lastActionChosen
+    clone.chosenEndpointsLog ++= this.chosenEndpointsLog
+    clone.colors ++= this.colors
+
+
+
+
+    clone
+  }
 
 
   // Fields
@@ -61,7 +91,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     endpoints
   }
 
-  override val model:SearchModel = new GFSModel(participantA, participantB) // Directed graph with the model.
+  /*override var*/ model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
 
   override def reconcile(connections: Iterable[Connection]): Unit = {
     // Count the introductions
@@ -111,23 +141,26 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
   override def choseQuery(a: Participant,
                           b: Participant,
-                          model: SearchModel): Query = {
+                          model: SearchModel): Query = policy match {
 
-    queryLog += Tuple2(a, b)
+    case Some(p) => {
+      queryLog += Tuple2(a, b)
 
-    val possibleActions:Seq[Action] = PolicySearchAgent.usedActions
+      val possibleActions: Seq[Action] = PolicySearchAgent.usedActions
 
-    // Create state
-    val state = this.observeState
+      // Create state
+      val state = this.observeState
 
-    // Query the policy
-    val action = policy.selectAction(state, possibleActions)
+      // Query the policy
+      val action = p.selectAction(state, possibleActions)
 
-    // Keep track of the action selection
-    actionCounters(action.toString) += 1
+      // Keep track of the action selection
+      actionCounters(action.toString) += 1
 
 
-    queryActionToStrategy(action, a, b)
+      queryActionToStrategy(action, a, b)
+    }
+    case None => throw new IllegalStateException("This agent wasn't provided with a policy")
   }
 
   override def observeState:State = {

@@ -17,13 +17,13 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   // Abstract members
   def observeState:State
   def getIterationNum:Int
-  val policy:Policy
-  var lastActionChosen:Option[Action] = None
-  val chosenEndpointsLog = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]
+  val policy:Option[Policy]
   ///////////////////
 
 
   // Concrete members
+  var lastActionChosen:Option[Action] = None
+  val chosenEndpointsLog = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]
   val queryLog = new mutable.ArrayBuffer[(Participant, Participant)]
   val introductions:mutable.HashMap[Participant, Int] = new mutable.HashMap[Participant, Int]()
   val references = new mutable.HashMap[(Participant, Participant, Boolean), Seq[String]]()
@@ -92,62 +92,53 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   // Strategy implementation
   override def choseEndPoints(source: Participant, destination: Participant,
                               previouslyChosen: Set[(Participant, Participant)]
-                              , model: SearchModel): (Participant, Participant) = {
+                              , model: SearchModel): (Participant, Participant) =  policy match {
 
-    // Endpoint choices
-
-
-    // State variations
-    // Explore state
-    val (exploreEndpoints, exploreState) = observeExploreState(source, destination, previouslyChosen, model)
+    case Some(p) => {
+      // Endpoint choices
 
 
-    // Exploit state
-    val (exploitEndpoints, exploitState) = observeExploitState(source, destination, previouslyChosen, model)
-    //////////////////////
-
-    // DEBUG: Keep track of how many times the explore/exploit pairs are equal
-    chosenEndpointsLog += Tuple2(exploreEndpoints, exploitEndpoints)
+      // State variations
+      // Explore state
+      val (exploreEndpoints, exploreState) = observeExploreState(source, destination, previouslyChosen, model)
 
 
-//    val states = PolicySearchAgent.getActiveEndpointActions map {
-//      case _:ExploreEndpoints =>
-//         "explore" -> exploreState
-//      case _:ExploitEndpoints =>
-//        "exploit" -> exploitState
-//    } toMap
+      // Exploit state
+      val (exploitEndpoints, exploitState) = observeExploitState(source, destination, previouslyChosen, model)
+      //////////////////////
 
-    // Combine both states into a single one
-//    val combinedState = FocusedReadingCompositeState(states("explore"), states("exploit"))
+      // DEBUG: Keep track of how many times the explore/exploit pairs are equal
+      chosenEndpointsLog += Tuple2(exploreEndpoints, exploitEndpoints)
 
 
-    // Choose the action
-//    val action = policy.selectAction(combinedState, PolicySearchAgent.getActiveEndpointActions.toSeq)
-  val action = policy.selectAction(observeState, PolicySearchAgent.usedActions)
+      // Choose the action
+      val action = p.selectAction(observeState, PolicySearchAgent.usedActions)
 
-    lastActionChosen = Some(action)
+      lastActionChosen = Some(action)
 
-    val chosenEndpoints = action match {
-      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
-        exploreEndpoints
-      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploreManyQuery()).contains(ac) =>
-        exploitEndpoints
+      val chosenEndpoints = action match {
+        case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
+          exploreEndpoints
+        case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploreManyQuery()).contains(ac) =>
+          exploitEndpoints
+      }
+
+      // Persist the changes to the state
+      this.queryLog += chosenEndpoints
+
+      val a = chosenEndpoints._1
+      val b = chosenEndpoints._2
+
+      if (!introductions.contains(a))
+        introductions += a -> getIterationNum
+      if (!introductions.contains(b))
+        introductions += b -> getIterationNum
+      //////////////////////////////////
+
+      // Return the chosen endpoints
+      chosenEndpoints
     }
-
-    // Persist the changes to the state
-    this.queryLog += chosenEndpoints
-
-    val a = chosenEndpoints._1
-    val b = chosenEndpoints._2
-
-    if(!introductions.contains(a))
-      introductions += a -> getIterationNum
-    if(!introductions.contains(b))
-      introductions += b -> getIterationNum
-    //////////////////////////////////
-
-    // Return the chosen endpoints
-    chosenEndpoints
+    case None => throw new IllegalStateException("The agent wasn't provided with a policy")
   }
   /////////////////////////
 }

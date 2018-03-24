@@ -124,7 +124,7 @@ object Testing extends App with LazyLogging{
     }
     /////////////////////////////////////////////////////////
 
-    val agent = new PolicySearchAgent(participantA, participantB, policy, normalizationParameters = normalizationParameters)
+    val agent = new PolicySearchAgent(participantA, participantB, Some(policy), normalizationParameters = normalizationParameters)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
 

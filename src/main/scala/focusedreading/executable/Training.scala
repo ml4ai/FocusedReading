@@ -80,9 +80,9 @@ object Training extends App with LazyLogging {
 
     override def episodeFinished(data: EpisodeObservation): Unit = {
       val environment = data.environment.asInstanceOf[SimplePathEnvironment]
-      if(environment.rewardShapped > 0){
-        shapedEpisodes += 1
-      }
+//      if(environment.rewardShapped > 0){
+//        shapedEpisodes += 1
+//      }
       episodeCounts += 1
     }
   }

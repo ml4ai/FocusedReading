@@ -46,7 +46,7 @@ class Tester(dataSet:Iterable[Tuple2[String, String]], policy:EpGreedyPolicy) ex
       logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
       // TODO: Add the normalization parameters to the arguments of the policy search agent
-      val agent = new PolicySearchAgent(participantA, participantB, policy)
+      val agent = new PolicySearchAgent(participantA, participantB, Some(policy))
       agent.focusedSearch(participantA, participantB)
 
 

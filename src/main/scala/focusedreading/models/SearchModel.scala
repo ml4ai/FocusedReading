@@ -35,4 +35,5 @@ abstract class SearchModel {
 
   def rankedNodes:Map[Participant, Int]
 
+  def copy():SearchModel
 }

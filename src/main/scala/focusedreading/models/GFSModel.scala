@@ -16,6 +16,14 @@ import scala.annotation.tailrec
 
 class GFSModel extends SearchModel{
 
+  override def copy() = {
+    val clone = new GFSModel()
+
+    G.edges.foreach(e => clone.G ++= e)
+
+    clone
+  }
+
   def this(source:Participant, destination:Participant) {
     this()
     addNode(source)

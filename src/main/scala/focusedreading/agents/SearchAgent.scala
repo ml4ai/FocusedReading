@@ -43,7 +43,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
   // This is the KB graph which will be grown iteratively. This is an abstract field and must be implemented on the
   // concrete class inheriting the trait
-  val model:SearchModel
+  var model:SearchModel
 
   // Counter that keeps track of the iteration number
   var iterationNum = 0
@@ -198,7 +198,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 abstract class SimplePathAgent(participantA:Participant, participantB:Participant) extends SearchAgent {
 
   // We use a Graph4Scala implementation of the KB search graph
-  val model:SearchModel = new GFSModel(participantA, participantB)
+  var model:SearchModel = new GFSModel(participantA, participantB)
 
   var (nodesCount, edgesCount) = (0, 0)
   var (prevNodesCount, prevEdgesCount) = (0, 0)
