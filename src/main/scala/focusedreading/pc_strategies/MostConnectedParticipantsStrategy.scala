@@ -7,6 +7,7 @@ import scala.collection.mutable
 
 trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
 
+  import Color._
 
   override def choseEndPoints(source:Participant,
                      destination:Participant,
@@ -39,10 +40,19 @@ trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
     allNodes.pushAll(model.nodes.toSeq.sortBy(n => model.degree(n)))//.reverse)
 
     var endpoints:(Participant, Participant) = (null, null)
+    var elegible = true
 
     do{
       endpoints = pickEndpoints(ssA, ssB)
-    }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && ssB.nonEmpty)
+      // Check the colors of the nodes
+      val (ca, cb) = endpoints match {
+        case (a, b) => (colors.getOrElse(a, White), colors.getOrElse(b, White))
+      }
+
+      elegible = ca != Black && cb != Black
+
+
+    }while(!elegible && !differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && ssB.nonEmpty)
 
     // Fallback if there are no new nodes in the components
     if(!differentEndpoints(endpoints, previouslyChosen)){
@@ -52,6 +62,13 @@ trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
       }while(!differentEndpoints(endpoints, previouslyChosen) && ssA.nonEmpty && allNodes.nonEmpty)
     }
 
+
+    // Color the chosen nodes
+    endpoints match {
+      case (a, b) =>
+        colors(a) = Black
+        colors(b) = Black
+    }
 
     endpoints
   }

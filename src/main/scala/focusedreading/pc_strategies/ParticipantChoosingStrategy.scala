@@ -13,10 +13,20 @@ import scala.collection.mutable
   * Created by enrique on 19/02/17.
   */
 trait ParticipantChoosingStrategy {
+
+  object Color extends Enumeration {
+    type Color = Value
+    val White, Black = Value
+  }
+
+  import Color._
+
   def choseEndPoints(source:Participant,
                      destination:Participant,
                      previouslyChosen:Set[(Participant, Participant)],
                      model:SearchModel):(Participant, Participant)
+
+  val colors = new mutable.HashMap[Participant, Color]()
 
   /**
     * Checks wether there's a change from the latest endpoints

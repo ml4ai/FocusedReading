@@ -8,6 +8,8 @@ import scala.collection.mutable
 trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
   def participantIntroductions:mutable.HashMap[Participant, Int]
 
+  import Color._
+
   override def choseEndPoints(source: Participant, destination: Participant,
                               previouslyChosen: Set[(Participant, Participant)],
                               model: SearchModel): (Participant, Participant) = {
@@ -36,22 +38,31 @@ trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
                     source:Participant, destination:Participant,
                    previouslyChosen:Set[(Participant, Participant)]):(Participant, Participant) = {
     val endpoints = {
-      val a = if(sourceChoices.size > 0) sourceChoices.head else source
-      val b = if(destChoices.size > 0) destChoices.head else destination
+      val a = if(sourceChoices.nonEmpty) sourceChoices.head else source
+      val b = if(destChoices.nonEmpty) destChoices.head else destination
 
       val candidates = if(a != b)
         (a, b)
       else
         (source, a)
 
-      if(differentEndpoints(candidates, previouslyChosen))
+      val elegible = candidates match {
+        case (x, y) =>
+          val cx = colors.getOrElse(x, White)
+          val cy = colors.getOrElse(y, White)
+
+          // To be elegible, one node needs not to be black
+        cx != Black || cy != Black
+      }
+
+      if(elegible && differentEndpoints(candidates, previouslyChosen))
         candidates
       else if(candidates == (source, destination))
         candidates
       else {
-        val newSourceChoices = if(sourceChoices.size > 0) sourceChoices.tail else Seq()
+        val newSourceChoices = if(sourceChoices.nonEmpty) sourceChoices.tail else Seq()
 
-        val newDestChoices = if(destChoices.size > 0) destChoices.tail else Seq()
+        val newDestChoices = if(destChoices.nonEmpty) destChoices.tail else Seq()
 
         pickEndpoints(newSourceChoices, newDestChoices, source, destination, previouslyChosen)
       }
