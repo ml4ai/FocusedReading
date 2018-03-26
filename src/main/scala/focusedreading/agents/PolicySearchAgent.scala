@@ -25,12 +25,12 @@ import scala.collection.mutable
   * @param policy Policy to follow
   * @param referencePath Expert path to compute the reward shaping potential
   */
-class PolicySearchAgent(participantA:Participant, participantB:Participant,
-                        val policy:Option[Policy],
+class PolicySearchAgent(val participantA:Participant, val participantB:Participant,
+                        val policy:Option[Policy] = None,
                         val referencePath:Option[Seq[Participant]] = None,
                         val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
   with PolicyParticipantsStrategy
-  with SQLIRStrategy
+  with RedisIRStrategy
   with SQLIteIEStrategy {
 
 
@@ -48,6 +48,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
     clone.iterationNum = clone.iterationNum
     clone.triedPairs ++= this.triedPairs
     clone.papersRead ++= this.papersRead
+    clone.uniquePapers ++= this.uniquePapers
     //clone.trace ++= this.trace
 
     clone.references ++= this.references
@@ -256,7 +257,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
   }
 
 
-  private val uniquePapers = new mutable.HashSet[String]()
+  val uniquePapers = new mutable.HashSet[String]()
   var shapingCount:Int = 0
   var rewardEvaluated:Int = 0
 
@@ -276,7 +277,7 @@ class PolicySearchAgent(participantA:Participant, participantB:Participant,
 
     val paperIds = this.informationRetrival(query)
 
-    //this.uniquePapers ++= paperIds
+    this.uniquePapers ++= paperIds map (_._1)
 
     val findings = this.informationExtraction(paperIds map (p => p._1))
 

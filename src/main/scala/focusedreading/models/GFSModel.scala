@@ -19,9 +19,16 @@ class GFSModel extends SearchModel{
   override def copy() = {
     val clone = new GFSModel()
 
-    G.edges.foreach(e => clone.G ++= e)
+    G.nodes.foreach(n => clone.G += n)
+    G.edges.foreach(e => clone.G += e)
 
     clone
+  }
+
+  override def hashCode(): Int = {
+    val elements = this.nodes.toSeq ++ this.edges.toSeq
+
+    elements.hashCode()
   }
 
   def this(source:Participant, destination:Participant) {
@@ -58,7 +65,7 @@ class GFSModel extends SearchModel{
   override def shortestPath(source: Participant, destination: Participant) = {
     (G.find(source), G.find(destination)) match {
       case (Some(pa), Some(pb)) => {
-        pa shortestPathTo pb match{
+        pa pathTo pb match{
           case Some(path) => Some{
             path.edges.map{
               e => Connection(e.source, e.target, e.label.value.asInstanceOf[Boolean], Seq(""))
