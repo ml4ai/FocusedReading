@@ -16,7 +16,7 @@ import scala.collection.parallel.ForkJoinTaskSupport
 
 object Search extends App{
 
-  val support = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
+//  val support = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
 
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
@@ -32,9 +32,9 @@ object Search extends App{
 
   val start = System.currentTimeMillis()
 
-  val collection = groundTruth.keys.toSeq.zipWithIndex.par
-
-  collection.tasksupport = support
+  val collection = groundTruth.keys.toSeq.zipWithIndex
+//
+//  collection.tasksupport = support
 
 
   for((k, ix) <- collection){
@@ -174,7 +174,7 @@ class UniformCostSearch(problem:FocusedReadingSearchProblem){
         val agent = state.agent
 
         // Create a node for each possible action at this point
-        val children = agent.possibleActions() map {
+        val children = agent.possibleActions().par map {
           action =>
             val newAgent = agent.clone()
             newAgent.executePolicy(action)
@@ -184,7 +184,7 @@ class UniformCostSearch(problem:FocusedReadingSearchProblem){
             childNode
         }
 
-        for(child <- children){
+        for(child <- children.seq){
           if(child.pathCost != Double.PositiveInfinity){
             if(!explored.contains(child)) {
               if(queue.count(n => n == child) == 0)
