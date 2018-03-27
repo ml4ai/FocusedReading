@@ -218,6 +218,7 @@ class UniformCostSearch(agent:PolicySearchAgent, groundTruth:GoldDatum, maxCost:
       }
     }
 
+    System.gc()
     solution
   }
 }
