@@ -11,9 +11,12 @@ import focusedreading.supervision.CreateExpertOracle
 import focusedreading.supervision.search.Search.GoldDatum
 
 import scala.collection.mutable
+import scala.collection.parallel.ForkJoinTaskSupport
 
 
 object Search extends App{
+
+  val support = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
 
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
@@ -29,7 +32,12 @@ object Search extends App{
 
   val start = System.currentTimeMillis()
 
-  for((k, ix) <- groundTruth.keys.toSeq.zipWithIndex.par){
+  val collection = groundTruth.keys.toSeq.zipWithIndex.par
+
+  collection.tasksupport = support
+
+
+  for((k, ix) <- collection){
 
     println(s"${ix+1} out of $total.\t$k")
 
