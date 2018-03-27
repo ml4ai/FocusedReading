@@ -121,7 +121,7 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:I
       Double.PositiveInfinity
     }
     else{
-      agent.uniquePapers.size //  TODO: Keep an eye on this, maybe change it for a better cost function, consider the action length
+      agent.papersRead.size //  TODO: Keep an eye on this, maybe change it for a better cost function, consider the action length
     }
   }
 

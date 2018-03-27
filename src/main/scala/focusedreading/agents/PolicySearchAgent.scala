@@ -48,7 +48,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone.iterationNum = clone.iterationNum
     clone.triedPairs ++= this.triedPairs
     clone.papersRead ++= this.papersRead
-    clone.uniquePapers ++= this.uniquePapers
     //clone.trace ++= this.trace
 
     clone.references ++= this.references
@@ -257,7 +256,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   }
 
 
-  val uniquePapers = new mutable.HashSet[String]()
   var shapingCount:Int = 0
   var rewardEvaluated:Int = 0
 
@@ -277,7 +275,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
     val paperIds = this.informationRetrival(query)
 
-    this.uniquePapers ++= paperIds map (_._1)
+    this.papersRead ++= paperIds map (_._1)
 
     val findings = this.informationExtraction(paperIds map (p => p._1))
 
