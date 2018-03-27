@@ -16,10 +16,23 @@ import scala.collection.parallel.ForkJoinTaskSupport
 
 object Search extends App{
 
-//  val support = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(4))
+  def actionSequence(node:Node):List[FocusedReadingAction] = {
+    if(node.parent.isDefined){
+      if(node.action.isDefined){
+        node.action.get :: actionSequence(node.parent.get)
+      }
+      else{
+        actionSequence(node.parent.get)
+      }
+    }
+    else{
+      Nil
+    }
+  }
 
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
+  val stepSize = configuration.getConfig("MDP").getConfig("paperAmounts").getDouble("many")
 
   type GoldDatum = Seq[(String, String, Seq[String])]
 
@@ -33,8 +46,6 @@ object Search extends App{
   val start = System.currentTimeMillis()
 
   val collection = groundTruth.keys.toSeq.zipWithIndex
-//
-//  collection.tasksupport = support
 
 
   for((k, ix) <- collection){
@@ -47,16 +58,13 @@ object Search extends App{
 
     val agent = new PolicySearchAgent(participantA, participantB)
 
-    val initialState = FRSearchState(agent, path, 0)
-
-    val problem = FocusedReadingSearchProblem(initialState)
-
-    val solver = new UniformCostSearch(problem)
+    //val solver = new UniformCostSearch(agent, path)
+    val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
 
     val result = solver.solve()
 
     solutions(k) = result match {
-      case Some(r) => Some(solver.actionSequence(r))
+      case Some(r) => Some(actionSequence(r))
       case None => None
     }
   }
@@ -91,7 +99,7 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:I
   def finished:Boolean = stepsDiscovered.values.count(!_) == 0 // There shouldn't be any false element to be finished
 
   def cost:Double = {
-    val failedState = depth > Search.maxIterations//agent.failureStopCondition(agent.participantA, agent.participantB, agent.model, persist = false)
+    val failedState = depth > Search.maxIterations
 
     if(failedState){
       Double.PositiveInfinity
@@ -131,28 +139,15 @@ case class Node(state:FRSearchState, pathCost:Double, action:Option[FocusedReadi
   }
 }
 
-case class FocusedReadingSearchProblem(initialState:FRSearchState)
 
-class UniformCostSearch(problem:FocusedReadingSearchProblem){
+class UniformCostSearch(agent:PolicySearchAgent, groundTruth:GoldDatum, maxCost:Double = Double.PositiveInfinity){
 
-  def actionSequence(node:Node):List[FocusedReadingAction] = {
-    if(node.parent.isDefined){
-      if(node.action.isDefined){
-        node.action.get :: actionSequence(node.parent.get)
-      }
-      else{
-        actionSequence(node.parent.get)
-      }
-    }
-    else{
-      Nil
-    }
-  }
+  val initialState = FRSearchState(agent, groundTruth, 0)
 
   def solve():Option[Node] ={
 
     // Get the initial state
-    val root = Node(problem.initialState, 0d, None, None)
+    val root = Node(initialState, 0d, None, None)
 
     val queue = mutable.PriorityQueue(root)
 
@@ -185,7 +180,7 @@ class UniformCostSearch(problem:FocusedReadingSearchProblem){
         }
 
         for(child <- children.seq){
-          if(child.pathCost != Double.PositiveInfinity){
+          if(child.pathCost < maxCost){
             if(!explored.contains(child)) {
               if(queue.count(n => n == child) == 0)
                 queue.enqueue(child)
@@ -209,4 +204,24 @@ class UniformCostSearch(problem:FocusedReadingSearchProblem){
 
     solution
   }
+}
+
+class IterativeLengtheningSearch(agent:PolicySearchAgent, groundTruth:GoldDatum, startingCost:Double,
+                                 increment:Double, maxCost:Double){
+
+  def solve():Option[Node] = {
+    var solution:Option[Node] = None
+
+    var costBound = startingCost
+    do{
+      println(s"Doing ILS with cost bound of: $costBound")
+      val clone = agent.clone()
+      val searcher = new UniformCostSearch(clone, groundTruth, costBound)
+      solution = searcher.solve()
+      costBound += increment
+    }while(solution.isEmpty && costBound <= maxCost)
+
+    solution
+  }
+
 }

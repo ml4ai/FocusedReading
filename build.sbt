@@ -16,13 +16,13 @@ libraryDependencies ++= Seq(
   "org.scalanlp" %% "breeze-viz" % "0.13",
   "org.jfree" % "jfreechart" % "1.0.19",
   "org.clulab" %% "sarsamora" % "0.2.0-SNAPSHOT",
-  "org.clulab" %% "processors-main" % "6.0.1",
-  "org.clulab" %% "processors-corenlp" % "6.0.1",
-  "org.clulab" %% "processors-models" % "6.0.1",
+//  "org.clulab" %% "processors-main" % "6.0.1",
+//  "org.clulab" %% "processors-corenlp" % "6.0.1",
+//  "org.clulab" %% "processors-models" % "6.0.1",
   "org.apache.lucene" % "lucene-core" % "5.3.1",
   "org.apache.lucene" % "lucene-analyzers-common" % "5.3.1",
   "org.apache.lucene" % "lucene-queryparser" % "5.3.1",
   "org.clulab" %% "reach-main" % "1.3.3-SNAPSHOT",
-  "org.xerial" % "sqlite-jdbc" % "3.16.1",
+  "org.xerial" % "sqlite-jdbc" % "3.21.0.1",
   "net.debasishg" %% "redisclient" % "3.4"
 )
