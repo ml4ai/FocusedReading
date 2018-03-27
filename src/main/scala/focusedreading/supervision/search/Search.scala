@@ -11,7 +11,9 @@ import focusedreading.supervision.CreateExpertOracle
 import focusedreading.supervision.search.Search.GoldDatum
 
 import scala.collection.mutable
+import scala.io
 import scala.collection.parallel.ForkJoinTaskSupport
+import scala.io.Source
 
 
 object Search extends App{
@@ -33,26 +35,40 @@ object Search extends App{
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
   val stepSize = configuration.getConfig("MDP").getConfig("paperAmounts").getDouble("many")
+  val trainingFile = configuration.getConfig("training").getString("inputFile")
+
+  val trainingPaths = Source.fromFile(trainingFile).getLines().toList.map(_.split("\t")).map(s => s.sliding(2).toList)
 
   type GoldDatum = Seq[(String, String, Seq[String])]
 
 
   val groundTruth: Map[(String, String), Option[GoldDatum]] = CreateExpertOracle.deserialize("shortest_paths.ser")
 
+  val trainingData = trainingPaths.map{
+    s =>
+      val key = (s.head(0), s.last(1))
+      val sequence = s.flatMap{
+        p =>
+          groundTruth((p(0), p(1))).get
+      }
+
+      key -> sequence
+  }.toMap
+
   val solutions = new mutable.HashMap[(String, String), Option[Seq[FocusedReadingAction]]]()
 
-  val total = groundTruth.size
+  val total = trainingData.size
 
   val start = System.currentTimeMillis()
 
-  val collection = groundTruth.keys.toSeq.zipWithIndex
+  val collection = trainingData.keys.toSeq.zipWithIndex
 
 
   for((k, ix) <- collection){
 
     println(s"${ix+1} out of $total.\t$k")
 
-    val path = groundTruth(k).get
+    val path = trainingData(k)
 
     val (participantA, participantB) = (new Participant("", path.head._1), new Participant("", path.last._2))
 
