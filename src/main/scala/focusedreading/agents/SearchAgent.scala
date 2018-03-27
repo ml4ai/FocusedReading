@@ -52,10 +52,10 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
   val triedPairs = new mutable.HashSet[(Participant, Participant)]
 
   // Debug information memory
-  val trace = new mutable.ArrayBuffer[IterativeStep]
+  //val trace = new mutable.ArrayBuffer[IterativeStep]
 
   // Record of the documents (PMCIDs) read during the process
-  val papersRead = new mutable.ArrayBuffer[String]
+  val papersRead = new mutable.HashSet[String]
 
   // This is the Focused Reading loop. The heart of the algorithm
   def focusedSearch(source:Participant, destination:Participant):Unit ={
@@ -102,11 +102,11 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
       // Store the step into the trace
       // For debugging purposes
-      val step = IterativeStep(iterationNum, modelGraphBefore, modelGraphAfter, (a, b), query.strategy,
-        irResult, findings)
+      //val step = IterativeStep(iterationNum, modelGraphBefore, modelGraphAfter, (a, b), query.strategy,
+      //  irResult, findings)
 
       // Add it to the FR trace
-      trace += step
+      //trace += step
 
     }
     // Repeat the process until it is finished

@@ -198,20 +198,20 @@ object Testing extends App with LazyLogging{
     }
 
     // Store the trace for analysis
-    val trace = AgentRunTrace(participantA, participantB,
-      agent.trace, recoveredPath, Some(datum))
-
-    val tracePath = AgentRunTrace.getFileName(datum)
-
+//    val trace = AgentRunTrace(participantA, participantB,
+//      agent.trace, recoveredPath, Some(datum))
+//
+//    val tracePath = AgentRunTrace.getFileName(datum)
+//
     var success = true
-    recoveredPath match {
-      case Some(_) =>
-        AgentRunTrace.save(trace, Paths.get("traces", "successes", tracePath))
-        success = true
-      case None =>
-        AgentRunTrace.save(trace, Paths.get("traces", "failures", tracePath))
-        success = false
-    }
+//    recoveredPath match {
+//      case Some(_) =>
+//        AgentRunTrace.save(trace, Paths.get("traces", "successes", tracePath))
+//        success = true
+//      case None =>
+//        AgentRunTrace.save(trace, Paths.get("traces", "failures", tracePath))
+//        success = false
+//    }
 
     numQueries += agent.iterationNum
     val end = System.nanoTime()
