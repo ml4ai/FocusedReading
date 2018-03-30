@@ -65,7 +65,7 @@ class GFSModel extends SearchModel{
   override def shortestPath(source: Participant, destination: Participant) = {
     (G.find(source), G.find(destination)) match {
       case (Some(pa), Some(pb)) => {
-        pa pathTo pb match{
+        pa shortestPathTo pb match{
           case Some(path) => Some{
             path.edges.map{
               e => Connection(e.source, e.target, e.label.value.asInstanceOf[Boolean], Seq(""))

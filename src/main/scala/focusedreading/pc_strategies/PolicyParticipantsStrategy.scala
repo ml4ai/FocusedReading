@@ -23,15 +23,15 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
   // Concrete members
   var lastActionChosen:Option[Action] = None
-  val chosenEndpointsLog = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]
-  val queryLog = new mutable.ArrayBuffer[(Participant, Participant)]
-  val introductions:mutable.HashMap[Participant, Int] = new mutable.HashMap[Participant, Int]()
-  val references = new mutable.HashMap[(Participant, Participant, Boolean), Seq[String]]()
+  var chosenEndpointsLog = List[((Participant, Participant),(Participant, Participant))]()
+  var queryLog = List[(Participant, Participant)]()
+  var introductions:Map[Participant, Int] = Map[Participant, Int]()
+  var references = Map[(Participant, Participant, Boolean), Seq[String]]()
   ///////////////////
 
   // Private auxiliary members
   protected val exploitChooser = new {} with MostRecentParticipantsStrategy {
-    override def participantIntroductions: mutable.HashMap[Participant, Int] = introductions
+    override def participantIntroductions: Map[Participant, Int] = introductions
   }
 
 //  protected val exploitChooser = new {} with FurthestParticipantStrategy {}
@@ -41,7 +41,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
   //private def possibleActions:Seq[Action] = getUsedActions//Seq(ExploreEndpoints(), ExploitEndpoints())
 
   private def peekState(a:Participant, b:Participant):FocusedReadingState = {
-    this.queryLog += Tuple2(a, b)
+    this.queryLog = (a, b)::this.queryLog
     val containsA = introductions.contains(a)
     val containsB = introductions.contains(b)
 
@@ -53,11 +53,12 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
     val state = this.observeState.asInstanceOf[FocusedReadingState]
 
     // Undo the changes
-    queryLog.remove(queryLog.size - 1)
+    //queryLog.remove(queryLog.size - 1)
+    queryLog = queryLog.dropRight(1)
     if (!containsA)
-      introductions.remove(a)
+      introductions -= a
     if (!containsB)
-      introductions.remove(b)
+      introductions -= b
 
     state
   }
@@ -108,7 +109,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
       //////////////////////
 
       // DEBUG: Keep track of how many times the explore/exploit pairs are equal
-      chosenEndpointsLog += Tuple2(exploreEndpoints, exploitEndpoints)
+      chosenEndpointsLog = (exploreEndpoints, exploitEndpoints)::chosenEndpointsLog
 
 
       // Choose the action
@@ -124,7 +125,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
       }
 
       // Persist the changes to the state
-      this.queryLog += chosenEndpoints
+      queryLog = chosenEndpoints::queryLog
 
       val a = chosenEndpoints._1
       val b = chosenEndpoints._2

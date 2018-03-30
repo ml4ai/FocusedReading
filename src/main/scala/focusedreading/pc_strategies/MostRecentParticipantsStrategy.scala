@@ -6,7 +6,7 @@ import focusedreading.models.SearchModel
 import scala.collection.mutable
 
 trait MostRecentParticipantsStrategy extends ParticipantChoosingStrategy{
-  def participantIntroductions:mutable.HashMap[Participant, Int]
+  def participantIntroductions:Map[Participant, Int]
 
   import Color._
 

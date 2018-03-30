@@ -9,6 +9,7 @@ import focusedreading.models._
 import focusedreading.tracing.IterativeStep
 import focusedreading.{Connection, Participant}
 
+import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scalax.collection.edge.LDiEdge
 import scalax.collection.mutable.Graph
@@ -49,13 +50,13 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
   var iterationNum = 0
 
   // Record of the participant pairs used during the search process
-  val triedPairs = new mutable.HashSet[(Participant, Participant)]
+  var triedPairs = HashSet[(Participant, Participant)]()
 
   // Debug information memory
   //val trace = new mutable.ArrayBuffer[IterativeStep]
 
   // Record of the documents (PMCIDs) read during the process
-  val papersRead = new mutable.HashSet[String]
+  var papersRead = HashSet[String]()
 
   // This is the Focused Reading loop. The heart of the algorithm
   def focusedSearch(source:Participant, destination:Participant):Unit ={
@@ -91,14 +92,14 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 
       // Keep track of the KB graph before reconciling the information
       // For debugging purposes
-      val modelGraphBefore = getStateGraph
+      //val modelGraphBefore = getStateGraph
 
       // Add the newest data to the KB graph
       reconcile(findings)
 
       // Keep track of the KB graph after
       // For debugging purposes
-      val modelGraphAfter = getStateGraph
+      //val modelGraphAfter = getStateGraph
 
       // Store the step into the trace
       // For debugging purposes
@@ -182,10 +183,10 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
     * Fetch the underlying graph of the KB. This is for debugging purposes
     * @return The graph structure of te KB
     */
-  protected def getStateGraph: Option[Graph[Participant, LDiEdge]] = this.model match {
-    case gsfModel:GFSModel => Some(gsfModel.G.clone())
-    case _ => None
-  }
+//  protected def getStateGraph: Option[Graph[Participant, LDiEdge]] = this.model match {
+//    case gsfModel:GFSModel => Some(gsfModel.getGraph.clone())
+//    case _ => None
+//  }
 }
 
 
@@ -198,7 +199,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
 abstract class SimplePathAgent(participantA:Participant, participantB:Participant) extends SearchAgent {
 
   // We use a Graph4Scala implementation of the KB search graph
-  var model:SearchModel = new GFSModel(participantA, participantB)
+  var model:SearchModel = new EfficientSearchModel(participantA, participantB)//new EfficientSearchModel(participantA, participantB)//
 
   var (nodesCount, edgesCount) = (0, 0)
   var (prevNodesCount, prevEdgesCount) = (0, 0)

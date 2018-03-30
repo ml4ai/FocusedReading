@@ -66,8 +66,8 @@ trait MostConnectedParticipantsStrategy extends ParticipantChoosingStrategy{
     // Color the chosen nodes
     endpoints match {
       case (a, b) =>
-        colors(a) = Black
-        colors(b) = Black
+        colors += a -> Black
+        colors += b -> Black
     }
 
     endpoints

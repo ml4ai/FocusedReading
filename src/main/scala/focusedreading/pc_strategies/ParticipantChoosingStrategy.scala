@@ -28,7 +28,7 @@ trait ParticipantChoosingStrategy {
                      previouslyChosen:Set[(Participant, Participant)],
                      model:SearchModel):(Participant, Participant)
 
-  val colors = new mutable.HashMap[Participant, Color]()
+  var colors = Map[Participant, Color]()
 
   /**
     * Checks wether there's a change from the latest endpoints

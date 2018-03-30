@@ -38,7 +38,7 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   with REACHIEStrategy {
 
   // Graph4Scala model
-  /*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
+  ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
 
 
   // Follow the cascade query strategy
@@ -60,7 +60,7 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
   with SQLIteIEStrategy {
 
 
-  /*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
+  ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
 
 
 

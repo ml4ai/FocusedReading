@@ -74,8 +74,8 @@ object Search extends App{
 
     val agent = new PolicySearchAgent(participantA, participantB)
 
-    //val solver = new UniformCostSearch(agent, path)
-    val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
+    val solver = new UniformCostSearch(agent, path)
+    //val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
 
     val result = solver.solve()
 
@@ -218,7 +218,6 @@ class UniformCostSearch(agent:PolicySearchAgent, groundTruth:GoldDatum, maxCost:
       }
     }
 
-    System.gc()
     solution
   }
 }

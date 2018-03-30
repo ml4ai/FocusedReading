@@ -5,7 +5,7 @@ import focusedreading.{Connection, Participant}
 import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
 import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
-import focusedreading.models.{GFSModel, SearchModel}
+import focusedreading.models.{EfficientSearchModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters, RankBin}
@@ -46,16 +46,16 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone.unchangedIterations = this.unchangedIterations
 
     clone.iterationNum = clone.iterationNum
-    clone.triedPairs ++= this.triedPairs
-    clone.papersRead ++= this.papersRead
+    clone.triedPairs = this.triedPairs
+    clone.papersRead = this.papersRead
     //clone.trace ++= this.trace
 
-    clone.references ++= this.references
-    clone.queryLog ++= this.queryLog
-    clone.introductions ++= this.introductions
+    clone.references = this.references
+    clone.queryLog = this.queryLog
+    clone.introductions = this.introductions
     clone.lastActionChosen = this.lastActionChosen
-    clone.chosenEndpointsLog ++= this.chosenEndpointsLog
-    clone.colors ++= this.colors
+    clone.chosenEndpointsLog = this.chosenEndpointsLog
+    clone.colors = this.colors
 
 
 
@@ -91,7 +91,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     endpoints
   }
 
-  /*override var*/ model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
+  /*override var*/ model/*:SearchModel*/ = new EfficientSearchModel(participantA, participantB) // Directed graph with the model.
 
   override def reconcile(connections: Iterable[Connection]): Unit = {
     // Count the introductions
@@ -144,7 +144,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
                           model: SearchModel): Query = policy match {
 
     case Some(p) => {
-      queryLog += Tuple2(a, b)
+      queryLog = (a, b)::queryLog
 
       val possibleActions: Seq[Action] = PolicySearchAgent.usedActions
 
@@ -172,7 +172,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   // Auxiliary methods
   private def fillState(model:SearchModel, iterationNum:Int,
                         queryLog:Seq[(Participant, Participant)],
-                        introductions:mutable.Map[Participant, Int]):State = {
+                        introductions:Map[Participant, Int]):State = {
 
     if(queryLog.nonEmpty) {
 
@@ -268,7 +268,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     }
 
     // Fetch the chosen participants (endpoints)
-    val (a, b) = queryLog.last
+    val (a, b) = queryLog.head
 
     // Build a query object based on the action
     val query = queryActionToStrategy(action, a, b)
@@ -435,7 +435,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
     if(persist){
       triedPairs += Tuple2(a, b)
-      queryLog += Tuple2(a, b)
+      queryLog = (a, b)::queryLog
     }
 
     0.0 // This reward is zero because this is an intermediate step of the FR loop
@@ -462,35 +462,14 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 /**
   * Companion object.
   */
-object PolicySearchAgent{
+object PolicySearchAgent {
   // All the possible actions
   val usedActions = Seq(ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploitQuery(),
     ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploitQuery())
 
-  //Seq(ExploitQuery(), ExploreManyQuery(), ExploreFewQuery(), ExploitEndpoints(), ExploreEndpoints())
   val config = ConfigFactory.load()
   val elements = config.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
-  def getActiveActions:Set[Action] = usedActions.toSet//getActiveEndpointActions ++ getActiveQueryActions
-
-//  def getActiveEndpointActions:Set[Action] = {
-//
-//    val activeActions:Set[Action] = elements.collect{
-//      case "ExploitEndpoints" => ExploitEndpoints()
-//      case "ExploreEndpoints" => ExploreEndpoints()
-//    }
-//
-//    activeActions
-//  }
-//
-//  def getActiveQueryActions:Set[Action] = {
-//
-//    val activeActions:Set[Action] = elements.collect{
-//      case "ExploitQuery" => ExploitQuery()
-//      case "ExploreManyQuery" => ExploreManyQuery()
-//      case "ExploreFewQuery" => ExploreFewQuery()
-//    }
-//
-//    activeActions
-//  }
+  def getActiveActions: Set[Action] = usedActions.toSet
 }
+
