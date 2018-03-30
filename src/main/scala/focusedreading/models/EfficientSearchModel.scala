@@ -5,6 +5,10 @@ import scala.collection.mutable
 
 class EfficientSearchModel extends SearchModel {
 
+  override def hashCode(): Int = {
+    graph.hashCode()
+  }
+
   private[EfficientSearchModel] var graph = Map[Participant, List[Connection]]()
   private[EfficientSearchModel] var inDegrees = Map[Participant, Int]()
   private[EfficientSearchModel] var outDegrees = Map[Participant, Int]()
