@@ -29,8 +29,9 @@ case class Query(strategy:QueryStrategy.Strategy, count:Int, A:Participant, B:Op
 class LuceneQueries(indexDir:String) extends LazyLogging{
 
   //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
-  val nxmlSearcher:NxmlSearcher = new NxmlSearcher(indexDir)
+  val nxmlSearcher:NxmlSearcher = LuceneQueries.getSearcher(indexDir)
   val nxmlDir = "/work/enoriega/fillblanks/nxml"
+  val participantCache = new mutable.HashMap[String, String]()
 
   /***
     * Gets the synonyms from the KB files
@@ -39,12 +40,18 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
     */
   def resolveParticipant(term:String) = {
 
-    LuceneQueries.dict.lift(term) match {
-      case Some(l) => "(" + l.map( x => "\"" + x + "\"").mkString(" OR ") + ")"
-      case None =>
-        logger.debug(s"Warning: missing term in the KB: $term")
-        ""
+    if(!participantCache.contains(term)) {
+      val resolved = LuceneQueries.dict.lift(term) match {
+        case Some(l) => "(" + l.map(x => "\"" + x + "\"").mkString(" OR ") + ")"
+        case None =>
+          logger.debug(s"Warning: missing term in the KB: $term")
+          ""
+      }
+      participantCache += term -> resolved
+      resolved
     }
+    else
+      participantCache(term)
   }
 
   /***
@@ -156,6 +163,19 @@ object LuceneQueries extends LazyLogging {
   lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hgnc.tsv.gz")).getLines.toSeq
 
   val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
+
+  //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
+  private val searchers = new mutable.HashMap[String, NxmlSearcher]()
+
+  def getSearcher(indexDir:String):NxmlSearcher = {
+    if(!searchers.contains(indexDir)){
+      val searcher = new NxmlSearcher(indexDir)
+      searchers += indexDir -> searcher
+      searcher
+    }
+    else
+      searchers(indexDir)
+  }
 
 }
 

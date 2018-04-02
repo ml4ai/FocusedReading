@@ -6,6 +6,7 @@ import java.io.{FileOutputStream, ObjectOutputStream, OutputStreamWriter}
 import com.typesafe.config.{Config, ConfigFactory}
 import focusedreading.{Connection, Participant}
 import focusedreading.agents.PolicySearchAgent
+import focusedreading.ir.LuceneQueries
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.CreateExpertOracle
@@ -45,6 +46,8 @@ object Search extends App{
       Connection.get(pa, pb, direction)
   }
 
+  // To avoid a race condition further down
+  LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
   def actionSequence(node:Node):List[FocusedReadingAction] = {
     if(node.parent.isDefined){
