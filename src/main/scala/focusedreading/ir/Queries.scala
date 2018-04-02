@@ -31,7 +31,6 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
   //data/nlp/corpora/pmc_openaccess/pmc_aug2016_index"
   val nxmlSearcher:NxmlSearcher = LuceneQueries.getSearcher(indexDir)
   val nxmlDir = "/work/enoriega/fillblanks/nxml"
-  val participantCache = new mutable.HashMap[String, String]()
 
   /***
     * Gets the synonyms from the KB files
@@ -40,18 +39,18 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
     */
   def resolveParticipant(term:String) = {
 
-    if(!participantCache.contains(term)) {
+    if(!LuceneQueries.participantCache.contains(term)) {
       val resolved = LuceneQueries.dict.lift(term) match {
         case Some(l) => "(" + l.map(x => "\"" + x + "\"").mkString(" OR ") + ")"
         case None =>
           logger.debug(s"Warning: missing term in the KB: $term")
           ""
       }
-      participantCache += term -> resolved
+      LuceneQueries.participantCache += term -> resolved
       resolved
     }
     else
-      participantCache(term)
+      LuceneQueries.participantCache(term)
   }
 
   /***
@@ -176,6 +175,8 @@ object LuceneQueries extends LazyLogging {
     else
       searchers(indexDir)
   }
+
+  val participantCache = new mutable.HashMap[String, String]() with mutable.SynchronizedMap[String, String]
 
 }
 
