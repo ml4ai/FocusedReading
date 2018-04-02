@@ -3,10 +3,11 @@ package focusedreading.supervision.search
 import java.io
 import java.io.{FileOutputStream, ObjectOutputStream, OutputStreamWriter}
 
-import com.typesafe.config.ConfigFactory
-import focusedreading.Participant
+import com.typesafe.config.{Config, ConfigFactory}
+import focusedreading.{Connection, Participant}
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
+import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.CreateExpertOracle
 import focusedreading.supervision.search.Search.GoldDatum
 
@@ -17,6 +18,33 @@ import scala.io.Source
 
 
 object Search extends App{
+
+  // Interning strings
+  println("Interning strings ...")
+  val config: Config = ConfigFactory.load()
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val da = new SQLiteQueries(sqlitePath)
+
+  println("Interning PMCIDs...")
+  val allPMCIDs = da.getAllPMCIDs
+  allPMCIDs foreach (_.intern)
+
+  println("Interning participant strings...")
+  val allParticipants = da.getAllParticipants
+  allParticipants foreach (_.intern)
+
+  println("Interning participant instances...")
+  allParticipants foreach (p => Participant.get("", p.intern))
+
+  println("Interning connection instances...")
+  val allConnections = da.getAllInteractions
+  allConnections foreach {
+    case (controller, controlled, direction) =>
+      val pa = Participant.get("", controller)
+      val pb = Participant.get("", controlled)
+      Connection.get(pa, pb, direction)
+  }
+
 
   def actionSequence(node:Node):List[FocusedReadingAction] = {
     if(node.parent.isDefined){
@@ -70,7 +98,7 @@ object Search extends App{
 
     val path = trainingData(k)
 
-    val (participantA, participantB) = (new Participant("", path.head._1), new Participant("", path.last._2))
+    val (participantA, participantB) = (Participant.get("", path.head._1), Participant.get("", path.last._2))
 
     val agent = new PolicySearchAgent(participantA, participantB)
 
@@ -130,7 +158,7 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:I
 
     pending foreach {
       k =>
-        val path = agent.model.shortestPath(Participant("", k._1), Participant("", k._2))
+        val path = agent.model.shortestPath(Participant.get("", k._1), Participant.get("", k._2))
         path match {
           case Some(_) => stepsDiscovered(k) = true
           case None => Unit

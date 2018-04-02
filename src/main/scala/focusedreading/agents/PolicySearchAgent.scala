@@ -5,7 +5,7 @@ import focusedreading.{Connection, Participant}
 import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
 import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
-import focusedreading.models.{EfficientSearchModel, SearchModel}
+import focusedreading.models.{EfficientSearchModel, GFSModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters, RankBin}
@@ -126,8 +126,8 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
           path =>
             path.map {
               connection =>
-                val references = this.references(connection.controller, connection.controlled, connection.sign)
-                Connection(connection.controller, connection.controlled, connection.sign, connection.evidence, references)
+                //val references = this.references(connection.controller, connection.controlled, connection.sign)
+                Connection.get(connection.controller, connection.controlled, connection.sign/*, connection.evidence, references*/)
             }
 
         }

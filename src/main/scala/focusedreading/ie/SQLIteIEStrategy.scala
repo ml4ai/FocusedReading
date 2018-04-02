@@ -35,7 +35,7 @@ trait SQLIteIEStrategy extends IEStrategy{
 
     // Instantiate interaction objects
     val connections = interactions map {
-      c => Connection(Participant("", c._1), Participant("", c._2), c._3, c._5, c._6)
+      c => Connection.get(Participant.get("", c._1), Participant.get("", c._2), c._3/*, c._5, c._6*/)
     }
 
     connections

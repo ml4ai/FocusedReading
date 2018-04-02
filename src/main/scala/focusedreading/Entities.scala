@@ -9,6 +9,7 @@ import org.clulab.odin.{EventMention, Mention}
 import org.clulab.reach.PaperReader
 import org.clulab.reach.grounding.{KBResolution, ReachKBUtils}
 import org.clulab.reach.indexer.NxmlSearcher
+import org.clulab.struct.Internalizer
 //import org.clulab.reach.mentions.serialization.json.{JSONSerializer, REACHMentionSeq}
 import org.clulab.reach.mentions.{BioMention, BioTextBoundMention, CorefEventMention, CorefMention, MentionOps}
 import org.clulab.utils.Serializer
@@ -86,4 +87,15 @@ object Participant{
     lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hgnc.tsv.gz")).getLines.toSeq
 
     val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
+
+  private val cache = new Internalizer[Participant]()
+
+  def get(id:String, value:String): Participant = cache.intern(Participant(id, value))
+}
+
+object Connection {
+  private val cache = new Internalizer[Connection]()
+
+  def get(controller:Participant, controlled:Participant, sign:Boolean):Connection =
+    cache.intern(Connection(controller, controlled, sign, Nil))
 }

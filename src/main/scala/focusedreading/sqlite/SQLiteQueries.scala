@@ -11,9 +11,12 @@ import focusedreading.{Connection, Participant}
   */
 class SQLiteQueries(path:String) extends LazyLogging{
 
+
+
   /**
     * Returns the PK of the interaction record for this pair of entities.
     * This is for annotation purposes
+    *
     * @param key Pair of entities to look for
     * @return ID column of the Interactions table
     */
@@ -79,7 +82,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
     val pmcids = new mutable.ArrayBuffer[String]()
 
     while(resultSet.next)
-      pmcids += resultSet.getString("pmcid")
+      pmcids += resultSet.getString("pmcid").intern()
 
     cmd.close
 
@@ -105,7 +108,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
     val pmcids = new mutable.ArrayBuffer[String]()
 
     while(resultSet.next)
-      pmcids += resultSet.getString("pmcid")
+      pmcids += resultSet.getString("pmcid").intern()
 
     cmd.close
     //conn.close
@@ -132,7 +135,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
     val pmcids = new mutable.ArrayBuffer[String]()
 
     while(resultSet.next)
-      pmcids += resultSet.getString("pmcid")
+      pmcids += resultSet.getString("pmcid").intern()
 
     cmd.close
     //conn.close
@@ -158,7 +161,7 @@ class SQLiteQueries(path:String) extends LazyLogging{
     val pmcids = new mutable.ArrayBuffer[String]()
 
     while(resultSet.next)
-      pmcids += resultSet.getString("pmcid")
+      pmcids += resultSet.getString("pmcid").intern()
 
     cmd.close
 
@@ -187,14 +190,14 @@ class SQLiteQueries(path:String) extends LazyLogging{
 
     while(resultSet.next){
       val id = resultSet.getInt("id")
-      val controller = resultSet.getString("controller")
-      val controlled = resultSet.getString("controlled")
+      val controller = resultSet.getString("controller").intern()
+      val controlled = resultSet.getString("controlled").intern()
       val sign = if(resultSet.getInt("direction") == 1)
         true
       else
         false
       val freq = resultSet.getInt("frequency")
-      val pmcid = resultSet.getString("pmcid")
+      val pmcid = resultSet.getString("pmcid").intern()
 
       interactions += Tuple6(id, controller, controlled, sign, freq, pmcid)
     }
@@ -247,8 +250,73 @@ class SQLiteQueries(path:String) extends LazyLogging{
       sentences += s"$pmcid: $sentence"
     }
 
-    cmd.close
+    cmd.close()
 
     sentences
+  }
+
+  def getAllPMCIDs:Iterable[String] = {
+    val commandPMCIDs = """SELECT DISTINCT pmcid FROM Paper_Interaction;"""
+
+    val conn = getConnection
+
+    val cmd = conn.prepareStatement(commandPMCIDs)
+
+    val resultSet = cmd.executeQuery()
+
+    val result =  new mutable.ListBuffer[String]
+
+    while(resultSet.next()){
+      result.prepend(resultSet.getString("pmcid"))
+    }
+
+    cmd.close()
+
+    result
+  }
+
+  def getAllParticipants:Iterable[String] = {
+    val commandParticipants =
+      """ SELECT DISTINCT i FROM (SELECT DISTINCT controller as i FROM Interactions
+        | UNION SELECT DISTINCT controlled as i FROM Interactions);
+      """.stripMargin
+
+    val conn = getConnection
+
+    val cmd = conn.prepareStatement(commandParticipants)
+
+    val resultSet = cmd.executeQuery()
+
+    val result =  new mutable.ListBuffer[String]
+
+    while(resultSet.next()){
+      result.prepend(resultSet.getString("i"))
+    }
+
+    cmd.close()
+
+    result
+  }
+
+  def getAllInteractions:Iterable[(String, String, Boolean)] = {
+    val commandInteractions =
+      """ SELECT controller, controlled, direction FROM Interactions;
+        |
+      """.stripMargin
+
+    val conn = getConnection
+    val cmd = conn.prepareStatement(commandInteractions)
+
+    val resultSet = cmd.executeQuery()
+
+    val result = new mutable.ListBuffer[(String, String, Boolean)]
+
+    while(resultSet.next){
+      val element = (resultSet.getString("controller"), resultSet.getString("controlled"), resultSet.getBoolean("direction"))
+      result.prepend(element)
+    }
+
+    cmd.close()
+    result
   }
 }
