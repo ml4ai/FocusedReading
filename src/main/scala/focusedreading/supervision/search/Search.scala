@@ -63,10 +63,14 @@ object Search extends App{
     }
   }
 
+
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
   val stepSize = configuration.getConfig("MDP").getConfig("paperAmounts").getDouble("many")
   val trainingFile = configuration.getConfig("training").getString("inputFile")
+  //val maxThreads = config.getConfig("search").getInt("maxThreads")
+
+  //val threadSupport = new ForkJoinTaskSupport()
 
   val trainingPaths = Source.fromFile(trainingFile).getLines().toList.map(_.split("\t")).map(s => s.sliding(2).toList)
 
@@ -95,7 +99,7 @@ object Search extends App{
   val collection = trainingData.keys.toSeq.zipWithIndex
 
 
-  for((k, ix) <- collection){
+  for((k, ix) <- collection.par){
 
     println(s"${ix+1} out of $total.\t$k")
 
