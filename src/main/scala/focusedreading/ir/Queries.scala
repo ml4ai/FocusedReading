@@ -191,6 +191,8 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
 
   override def fetchHits(hits: Set[(Int, Float)]): List[(String, Float)] = {
 
+    redisClient.reconnect
+
     val orderedHits = hits.toSeq
     val cachedElements = orderedHits map (h => s"id:${h._1}") map redisClient.get[String]
 
@@ -214,12 +216,16 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
         redisClient.set(s"id:$id", pmcid)
     }
 
+    redisClient.quit
 
     existing.toList ++ newElements
 
   }
 
   override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+
+    redisClient.reconnect
+
     val queryKey = s"conjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
@@ -227,6 +233,8 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
     if(cachedResultSize > 1) {
       val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
       val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      redisClient.quit
 
       pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
 
@@ -239,6 +247,8 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
           redisClient.rpush(s"$queryKey:irscore", irScore)
       }
+
+      redisClient.quit
       // Return the query result
       result
     }
@@ -246,6 +256,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
   }
 
   override def binaryDisjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    redisClient.reconnect
     val queryKey = s"disjunction:${a.id}:${b.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
@@ -253,6 +264,8 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
     if(cachedResultSize > 1) {
       val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
       val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
+
+      redisClient.quit
 
       pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
 
@@ -265,12 +278,15 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
           redisClient.rpush(s"$queryKey:irscore", irScore)
       }
+
+      redisClient.quit
       // Return the query result
       result
     }
   }
 
   override def binarySpatialQuery(a: Participant, b: Participant, k: Int, totalHits: Int): Iterable[(String, Float)] = {
+    redisClient.reconnect
     val queryKey = s"spatial:${a.id}:${b.id}:$k:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
@@ -290,12 +306,15 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
           redisClient.rpush(s"$queryKey:irscore", irScore)
       }
+
+      redisClient.quit
       // Return the query result
       result
     }
   }
 
   override def singletonQuery(p: Participant, totalHits: Int): Iterable[(String, Float)] = {
+    redisClient.reconnect
     val queryKey = s"singleton:${p.id}:$totalHits"
     val cachedResultSize = redisClient.llen(s"$queryKey:pmcid").get
 
@@ -304,6 +323,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
       val pmcidOptions = redisClient.lrange(s"$queryKey:pmcid", 0, -1).get
       val irScoreOptions = redisClient.lrange(s"$queryKey:irscore", 0, -1).get
 
+      redisClient.quit
       pmcidOptions.collect { case Some(pmcid) => pmcid } zip irScoreOptions.collect { case Some(irScore) => irScore.toFloat }
 
     }
@@ -315,6 +335,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
         case (pmcid, irScore) => redisClient.rpush(s"$queryKey:pmcid", pmcid)
           redisClient.rpush(s"$queryKey:irscore", irScore)
       }
+      redisClient.quit
       // Return the query result
       result
     }
