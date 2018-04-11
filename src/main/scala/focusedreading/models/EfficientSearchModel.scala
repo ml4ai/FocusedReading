@@ -3,7 +3,7 @@ import focusedreading.{Connection, Participant}
 
 import scala.collection.mutable
 
-class EfficientSearchModel extends SearchModel {
+class EfficientSearchModel extends SearchModel with Serializable {
 
   override def hashCode(): Int = {
     graph.hashCode()

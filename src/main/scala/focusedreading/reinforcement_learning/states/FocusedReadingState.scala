@@ -122,7 +122,7 @@ case class FocusedReadingState(paRank:Double,
 /**
   * Companion object to the FocusedReadingState class
   */
-object FocusedReadingState {
+object FocusedReadingState extends Serializable {
 
   val featureValueObservations = new mutable.HashMap[String, mutable.ArrayBuffer[Double]]()
 

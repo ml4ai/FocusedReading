@@ -7,7 +7,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import focusedreading.{Connection, Participant}
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.ir.LuceneQueries
+import focusedreading.models.SearchModel
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
+import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.CreateExpertOracle
 import focusedreading.supervision.search.Search.GoldDatum
@@ -49,10 +51,12 @@ object Search extends App{
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  def actionSequence(node:Node):List[FocusedReadingAction] = {
+  def actionSequence(node:Node):List[(FocusedReadingState, FocusedReadingAction)] = {
     if(node.parent.isDefined){
       if(node.action.isDefined){
-        node.action.get :: actionSequence(node.parent.get)
+        val state = node.state
+        val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
+        (frState, node.action.get) :: actionSequence(node.parent.get)
       }
       else{
         actionSequence(node.parent.get)
@@ -90,7 +94,7 @@ object Search extends App{
       key -> sequence
   }.toMap
 
-  val solutions = new mutable.HashMap[(String, String), Option[Seq[FocusedReadingAction]]]()
+  val solutions = new mutable.HashMap[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]]()
 
   val total = trainingData.size
 

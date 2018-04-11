@@ -28,7 +28,7 @@ import scala.collection.mutable
 class PolicySearchAgent(val participantA:Participant, val participantB:Participant,
                         val policy:Option[Policy] = None,
                         val referencePath:Option[Seq[Participant]] = None,
-                        val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB)
+                        val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB) with Serializable
   with PolicyParticipantsStrategy
   with RedisIRStrategy
   with SQLIteIEStrategy {
