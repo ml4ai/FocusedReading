@@ -36,7 +36,9 @@ case class Participant(namespace:String, id:String){
     case _ => false
   }
 
-  override def hashCode(): Int =  (this.id + this.namespace).hashCode
+  private lazy val precomputedHashCode = (this.id + this.namespace).hashCode
+
+  override def hashCode(): Int =  precomputedHashCode
 
   override def toString: String = s"$namespace:$id"
 }
@@ -50,7 +52,9 @@ case class Connection(controller:Participant, controlled:Participant, sign:Boole
     case _ => false
   }
 
-  override def hashCode(): Int = s"${controller.toString}:${controlled.toString}:$sign".hashCode
+  private lazy val precomputedHash:Int = s"${controller.toString}:${controlled.toString}:$sign".hashCode
+
+  override def hashCode(): Int = precomputedHash
 
   def toString(humanFriendly:Boolean): String ={
     if(humanFriendly){
