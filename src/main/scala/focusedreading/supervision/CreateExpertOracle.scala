@@ -6,6 +6,7 @@ import java.sql.DriverManager
 import com.typesafe.config.ConfigFactory
 
 import scala.collection.mutable
+import scala.io.Source
 import scala.sys.process.ProcessBuilder.Source
 import scalax.collection.edge.LDiEdge
 import scalax.collection.mutable.Graph
@@ -183,8 +184,9 @@ object CreateExpertOracle extends App{
     val pathways = io.Source.fromFile(filePath).getLines.toList.map(_.split("\t"))
 
 
-    //val gt = findGroundTruth(pathways)
-    val gt = deserialize("shortest_paths.ser")
+    val goldenDataPath = conf.getConfig("expertOracle").getString("goldenDataPath")
+    val gt = findGroundTruth(pathways)
+    //val gt = deserialize(goldenDataPath)
     findNegativeExamples(pathways, gt)
   }
 
@@ -195,6 +197,29 @@ object CreateExpertOracle extends App{
     ois.close()
 
     ret
+  }
+
+  def reassemblePaths(sequencesPath:String, fragments:Map[(String, String), Option[Seq[(String, String, Seq[String])]]]) = {
+
+    val trainingPaths = Source.fromFile(sequencesPath).getLines().toList.map(_.split("\t")).map(s => s.sliding(2).toList)
+
+    val trainingData = trainingPaths.map{
+      s =>
+        val key = (s.head(0), s.last(1))
+        val sequence = s.flatMap{
+          p =>
+            fragments((p(0), p(1))).get
+        }
+
+        key -> sequence
+    }.toMap
+
+    trainingData
+  }
+
+  def reassemblePaths(sequencesPath:String, fragmentsPath:String):Map[(String, String), List[(String, String, Seq[String])]] = {
+    val fragments = deserialize(fragmentsPath)
+    reassemblePaths(sequencesPath, fragments)
   }
 
   buildDatasets()

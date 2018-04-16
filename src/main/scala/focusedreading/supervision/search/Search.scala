@@ -71,7 +71,8 @@ object Search extends App{
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
   val stepSize = configuration.getConfig("MDP").getConfig("paperAmounts").getDouble("many")
-  val trainingFile = configuration.getConfig("training").getString("inputFile")
+  val trainingFile = configuration.getConfig("expertOracle").getString("inputFile")
+  val fragmentsFile = configuration.getConfig("expertOracle").getString("goldenDataPath")
   //val maxThreads = config.getConfig("search").getInt("maxThreads")
 
   //val threadSupport = new ForkJoinTaskSupport()
@@ -81,7 +82,7 @@ object Search extends App{
   type GoldDatum = Seq[(String, String, Seq[String])]
 
 
-  val groundTruth: Map[(String, String), Option[GoldDatum]] = CreateExpertOracle.deserialize("shortest_paths.ser")
+  val groundTruth: Map[(String, String), Option[GoldDatum]] = CreateExpertOracle.deserialize(fragmentsFile)
 
   val trainingData = trainingPaths.map{
     s =>
