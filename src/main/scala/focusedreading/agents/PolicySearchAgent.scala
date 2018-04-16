@@ -211,8 +211,8 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       val paUngrounded = a.id.toUpperCase.startsWith("UAZ")
       val pbUngrounded = b.id.toUpperCase.startsWith("UAZ")
 
-      assert(paRank >= 0 && paRank <= 1, "PA rank is out of bounds")
-      assert(pbRank >= 0 && pbRank <= 1, "PA rank is out of bounds")
+      if(paRank >= 0 && paRank <= 1) println("PA rank is out of bounds")
+      if(pbRank >= 0 && pbRank <= 1) println("PA rank is out of bounds")
 
       FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
         pbQueryLogCount, sameComponent, paIntro, pbIntro, paUngrounded,
