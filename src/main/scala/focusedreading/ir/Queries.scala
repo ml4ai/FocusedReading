@@ -93,6 +93,9 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
   }
 
   def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+
+    val key = (a.id, b.id, "conjunction")
+
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -101,13 +104,26 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
       return Set()
     }
 
-    var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " AND " + bSynonyms + ")")
+    val existingString = LuceneQueries.queryStringCache.lift(key)
+
+    val luceneQuery = existingString match {
+      case Some(s) => s
+      case None => {
+        var query = QueryParserBase.escape("(" + aSynonyms + " AND " + bSynonyms + ")")
+        LuceneQueries.queryStringCache += key -> query
+        query
+      }
+    }
+
+
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
     fetchHits(hits)
   }
 
   def binaryDisjunctionQuery2(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+
+
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -123,6 +139,9 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
   }
 
   def binaryDisjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+
+    val key = (a.id, b.id, "disjunction")
+
     // Build a query for lucene
     val aSynonyms = resolveParticipant(a.id)
     val bSynonyms = resolveParticipant(b.id)
@@ -131,19 +150,39 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
       return Set()
     }
 
-    var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " OR " + bSynonyms + ")")
+    val existingString = LuceneQueries.queryStringCache.lift(key)
+
+    var luceneQuery =  existingString match {
+      case Some(s) => s
+      case None => {
+        val query = QueryParserBase.escape("(" + aSynonyms + " OR " + bSynonyms + ")")
+        LuceneQueries.queryStringCache += key -> query
+        query
+      }
+    }
+
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
     fetchHits(hits)
   }
 
   def singletonQuery(p:Participant, totalHits:Int):Iterable[(String, Float)] = {
+    val key = (p.id, p.id, "singleton")
     val synonyms = resolveParticipant(p.id)
 
     if(synonyms.isEmpty)
       return Set()
 
-    var luceneQuery = QueryParserBase.escape("(" + synonyms + ")")
+    val existingString = LuceneQueries.queryStringCache.lift(key)
+
+    var luceneQuery = existingString match {
+      case Some(s) => s
+      case None => {
+        val query = QueryParserBase.escape("(" + synonyms + ")")
+        LuceneQueries.queryStringCache += key -> query
+        query
+      }
+    }
     var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
 
     fetchHits(hits)
@@ -177,6 +216,7 @@ object LuceneQueries extends LazyLogging {
   }
 
   val participantCache = new mutable.HashMap[String, String]() with mutable.SynchronizedMap[String, String]
+  val queryStringCache = new mutable.HashMap[(String, String, String), String] with mutable.SynchronizedMap[(String, String, String), String]
 
 }
 
