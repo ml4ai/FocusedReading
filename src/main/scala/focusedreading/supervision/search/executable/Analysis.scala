@@ -4,7 +4,7 @@ import java.io.{FileInputStream, ObjectInputStream}
 
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.supervision.CreateExpertOracle
-import DoSearch.GoldDatum
+import focusedreading.supervision.search.FRSearchState.GoldDatum
 
 object Analysis extends App{
 
