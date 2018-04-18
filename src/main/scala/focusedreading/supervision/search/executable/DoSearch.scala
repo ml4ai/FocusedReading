@@ -13,12 +13,23 @@ import focusedreading.supervision.search.FRSearchState.GoldDatum
 import focusedreading.supervision.search.{FRSearchState, UniformCostSearch}
 import focusedreading.supervision.search.UniformCostSearch
 import focusedreading.{Connection, Participant}
+import org.clulab.utils.Serializer
 
 import scala.collection.mutable
 import scala.io.Source
 
 
 object DoSearch extends App{
+
+  def persistResults(results:Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]], path:String){
+    val osw = new ObjectOutputStream(new FileOutputStream(path))
+    osw.writeObject(results)
+    osw.close()
+  }
+
+  def deserializeResults(path:String):Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]] = {
+    Serializer.load[Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]]](path)
+  }
 
   // Interning strings
   println("Interning strings ...")
@@ -127,9 +138,7 @@ object DoSearch extends App{
   println(s"${(end - start)/1000} senconds")
   println(s"Found ${solutions.values.count{ case Some(_) => true; case None => false}} solutions out of $total")
 
-  val osw = new ObjectOutputStream(new FileOutputStream("solutions.ser"))
-  osw.writeObject(solutions.toMap)
-  osw.close()
+  persistResults(solutions.toMap, "solutions.ser")
 
 }
 
