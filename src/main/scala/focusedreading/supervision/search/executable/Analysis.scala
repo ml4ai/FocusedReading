@@ -1,10 +1,10 @@
-package focusedreading.supervision.search
+package focusedreading.supervision.search.executable
 
 import java.io.{FileInputStream, ObjectInputStream}
 
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.supervision.CreateExpertOracle
-import focusedreading.supervision.search.Search.GoldDatum
+import DoSearch.GoldDatum
 
 object Analysis extends App{
 
