@@ -10,8 +10,7 @@ import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.CreateExpertOracle
 import focusedreading.supervision.search.FRSearchState.GoldDatum
-import focusedreading.supervision.search.{FRSearchState, UniformCostSearch}
-import focusedreading.supervision.search.UniformCostSearch
+import focusedreading.supervision.search.{AStar, FRSearchState, Node, UniformCostSearch}
 import focusedreading.{Connection, Participant}
 import org.clulab.utils.Serializer
 
@@ -121,8 +120,9 @@ object DoSearch extends App{
     val agent = new PolicySearchAgent(participantA, participantB)
 
     val initialState = FRSearchState(agent, path, 0, maxIterations) // TODO: Fix me
-    val solver = new UniformCostSearch(initialState)
+    //val solver = new UniformCostSearch(initialState)
     //val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
+    val solver = new AStar(initialState)
 
     val result = solver.solve()
 
@@ -140,23 +140,6 @@ object DoSearch extends App{
 
   persistResults(solutions.toMap, "solutions.ser")
 
-}
-
-
-
-case class Node(state:FRSearchState, pathCost:Double, action:Option[FocusedReadingAction], parent:Option[Node]) extends Ordered[Node] {
-  override def compare(that: Node): Int = {
-    Math.ceil(pathCost - that.pathCost).toInt
-  }
-
-  override def hashCode() = state.agent.model.hashCode()
-
-  override def equals(obj: scala.Any): Boolean = obj match {
-    case that:Node => {
-      this.hashCode() == that.hashCode()
-    }
-    case _ => false
-  }
 }
 
 

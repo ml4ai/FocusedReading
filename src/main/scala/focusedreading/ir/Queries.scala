@@ -87,12 +87,12 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
     }
 
     var luceneQuery = QueryParserBase.escape("(" + aSynonyms + " AND " + bSynonyms + ")~"+k)
-    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
+    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), Some(totalHits)) // Search Lucene for the participants
 
     fetchHits(hits)
   }
 
-  def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Int):Iterable[(String, Float)] = {
+  def binaryConjunctionQuery(a:Participant, b:Participant, totalHits:Option[Int]):Iterable[(String, Float)] = {
 
     val key = (a.id, b.id, "conjunction")
 
@@ -161,7 +161,7 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
       }
     }
 
-    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
+    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), Some(totalHits)) // Search Lucene for the participants
 
     fetchHits(hits)
   }
@@ -183,7 +183,7 @@ class LuceneQueries(indexDir:String) extends LazyLogging{
         query
       }
     }
-    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), totalHits) // Search Lucene for the participants
+    var hits = nxmlSearcher.searchByField(luceneQuery, "text", new StandardAnalyzer(), Some(totalHits)) // Search Lucene for the participants
 
     fetchHits(hits)
   }
@@ -199,6 +199,7 @@ object LuceneQueries extends LazyLogging {
   lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("PFAM-families.tsv.gz")).getLines.toSeq
   lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("bio_process.tsv.gz")).getLines.toSeq
   lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hgnc.tsv.gz")).getLines.toSeq
+  lines ++= ReachKBUtils.sourceFromResource(ReachKBUtils.makePathInKBDir("hmdb.tsv.gz")).getLines.toSeq
 
   val dict = lines.map{ l => val t = l.split("\t"); (t(1), t(0)) }.groupBy(t=> t._1).mapValues(l => l.map(_._2).distinct)
 
@@ -262,7 +263,7 @@ class RedisLuceneQueries(indexDir:String, server:String = "localhost", port:Int 
 
   }
 
-  override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Int): Iterable[(String, Float)] = {
+  override def binaryConjunctionQuery(a: Participant, b: Participant, totalHits: Option[Int]): Iterable[(String, Float)] = {
 
     redisClient.reconnect
 

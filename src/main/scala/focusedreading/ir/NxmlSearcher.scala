@@ -26,11 +26,11 @@ import scala.collection.mutable.ArrayBuffer
   * Date: 10/19/15
   */
 class NxmlSearcher(val indexDir:String) extends LazyLogging {
-  val reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)))
-  val searcher = new IndexSearcher(reader)
-  val proc = new BioNLPProcessor(withChunks = false)
+  private val reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)))
+  private val searcher = new IndexSearcher(reader)
+  private val proc = new BioNLPProcessor(withChunks = false)
 
-  def close() = reader.close()
+  def close(): Unit = reader.close()
 
   def docs(ids:Seq[(Int, Float)]):Seq[(Document, Float)] = {
 
@@ -38,24 +38,18 @@ class NxmlSearcher(val indexDir:String) extends LazyLogging {
 
   }
 
-
-
-  def search(query:String, totalHits:Int):Set[(Int, Float)] = {
-    searchByField(query, "text", new StandardAnalyzer(), totalHits)
-  }
-
-  def searchId(id:String):Set[(Int, Float)] = {
-    searchByField(id, "id", new WhitespaceAnalyzer(), 1)
-  }
-
   def searchByField(query:String,
                     field:String,
                     analyzer:Analyzer,
-                    totalHits:Int,
+                    totalHits:Option[Int],
                     verbose:Boolean = true):Set[(Int, Float)] = {
     try{
       val q = new QueryParser(field, analyzer).parse(query)
-      val collector = TopScoreDocCollector.create(totalHits)
+      val collector =totalHits match {
+        case Some(i) => TopScoreDocCollector.create(totalHits.get)
+        case None => TopScoreDocCollector.create(10000) // TODO: Do this cleanly
+      }
+
       searcher.search(q, collector)
       val hits = collector.topDocs().scoreDocs
       val results = new mutable.HashSet[(Int, Float)]
@@ -72,30 +66,6 @@ class NxmlSearcher(val indexDir:String) extends LazyLogging {
 
   }
 
-  def intersection(s1:Set[(Int, Float)], s2:Set[(Int, Float)]):Set[(Int, Float)] = {
-    val result = new mutable.HashSet[(Int, Float)]()
-    for(s <- s1) {
-      var found = false
-      var otherScore = 0.0.toFloat
-      for(o <- s2 if ! found) {
-        if(s._1 == o._1) {
-          found = true
-          otherScore = o._2
-        }
-      }
-      if(found) {
-        result += new Tuple2(s._1, s._2 + otherScore)
-      }
-    }
-    result.toSet
-  }
-
-  def union(s1:Set[Int], s2:Set[Int]):Set[Int] = {
-    val result = new mutable.HashSet[Int]()
-    s1.foreach(result += _)
-    s2.foreach(result += _)
-    result.toSet
-  }
 
 
 }

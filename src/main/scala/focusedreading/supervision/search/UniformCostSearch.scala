@@ -1,7 +1,6 @@
 package focusedreading.supervision.search
 
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
-import focusedreading.supervision.search.executable.{Node}
 
 import scala.collection.mutable
 
@@ -9,12 +8,14 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
 
   type GoldDatum = Seq[(String, String, Seq[String])]
 
+  protected val queue:mutable.PriorityQueue[Node] = new mutable.PriorityQueue[Node]()
+
   def solve():Option[Node] ={
 
     // Get the initial state
     val root = Node(initialState, 0d, None, None)
 
-    val queue = mutable.PriorityQueue(root)
+    queue.enqueue(root)
 
     val explored = new mutable.HashSet[Node]()
 

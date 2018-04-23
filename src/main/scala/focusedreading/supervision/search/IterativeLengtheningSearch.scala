@@ -1,7 +1,5 @@
 package focusedreading.supervision.search
 
-import focusedreading.supervision.search.executable.Node
-
 class IterativeLengtheningSearch(initialState:FRSearchState, startingCost:Double,
                                  increment:Double, maxCost:Double){
 
