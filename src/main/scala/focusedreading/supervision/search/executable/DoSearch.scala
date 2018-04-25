@@ -20,14 +20,14 @@ import scala.io.Source
 
 object DoSearch extends App{
 
-  def persistResults(results:Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]], path:String){
+  def persistResults(results:Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]], path:String){
     val osw = new ObjectOutputStream(new FileOutputStream(path))
     osw.writeObject(results)
     osw.close()
   }
 
-  def deserializeResults(path:String):Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]] = {
-    Serializer.load[Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]]](path)
+  def deserializeResults(path:String):Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]] = {
+    Serializer.load[Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]](path)
   }
 
   // Interning strings
@@ -59,12 +59,12 @@ object DoSearch extends App{
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  def actionSequence(node:Node):List[(FocusedReadingState, FocusedReadingAction)] = {
+  def actionSequence(node:Node):List[(FocusedReadingState, FocusedReadingAction, Double)] = {
     if(node.parent.isDefined){
       if(node.action.isDefined){
         val state = node.state
         val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
-        (frState, node.action.get) :: actionSequence(node.parent.get)
+        (frState, node.action.get, node.pathCost) :: actionSequence(node.parent.get)
       }
       else{
         actionSequence(node.parent.get)
@@ -100,7 +100,7 @@ object DoSearch extends App{
       key -> sequence
   }.toMap
 
-  val solutions = new mutable.HashMap[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]]()
+  val solutions = new mutable.HashMap[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]()
 
   val total = trainingData.size
 
@@ -120,9 +120,9 @@ object DoSearch extends App{
     val agent = new PolicySearchAgent(participantA, participantB)
 
     val initialState = FRSearchState(agent, path, 0, maxIterations) // TODO: Fix me
-    //val solver = new UniformCostSearch(initialState)
+    val solver = new UniformCostSearch(initialState)
     //val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
-    val solver = new AStar(initialState)
+    //val solver = new AStar(initialState)
 
     val result = solver.solve()
 
