@@ -35,8 +35,11 @@ class DocumentSetIntersectionHeuristic(links:Seq[(Participant, Participant)], qu
     // Compute the union of all the document sets that are considered
     val union = setsToConsider.fold(Set.empty[String])((a, b) => a union b)
 
+    // Subtract the papers that have already been read by the system
+    union.diff(state.agent.papersRead).size.toDouble
+
     // Return the size of the union
-    union.size.toDouble
+    //union.size.toDouble
   }
 
 }
