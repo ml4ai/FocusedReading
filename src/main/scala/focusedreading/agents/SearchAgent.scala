@@ -56,7 +56,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
   //val trace = new mutable.ArrayBuffer[IterativeStep]
 
   // Record of the documents (PMCIDs) read during the process
-  var papersRead = HashSet[String]()
+  var papersRead = mutable.TreeSet[String]()
 
   // This is the Focused Reading loop. The heart of the algorithm
   def focusedSearch(source:Participant, destination:Participant):Unit ={
