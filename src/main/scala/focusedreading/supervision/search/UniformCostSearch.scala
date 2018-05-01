@@ -10,10 +10,14 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
 
   protected val queue:mutable.PriorityQueue[Node] = new mutable.PriorityQueue[Node]()
 
+  protected def createNode(state:FRSearchState, node:Option[Node], action:Option[FocusedReadingAction]):Node = {
+    Node(state, state.cost.toInt, 0, state.remainingCost, action, node)
+  }
+
   def solve():Option[Node] ={
 
     // Get the initial state
-    val root = Node(initialState, 0d, None, None)
+    val root = createNode(initialState, None, None)//Node(initialState, initialState.cost.toInt, 0, initialState.remainingCost, None, None)
 
     queue.enqueue(root)
 
@@ -41,7 +45,7 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
             newAgent.executePolicy(action)
             val newState = new FRSearchState(newAgent, state)
             newState.updateState()
-            val childNode = Node(newState, newState.cost, Some(action.asInstanceOf[FocusedReadingAction]), Some(node))
+            val childNode = createNode(newState, Some(node), Some(action.asInstanceOf[FocusedReadingAction]))
             childNode
         }
 

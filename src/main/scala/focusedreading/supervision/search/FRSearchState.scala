@@ -3,11 +3,23 @@ package focusedreading.supervision.search
 import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.supervision.search.FRSearchState.GoldDatum
+import focusedreading.supervision.search.heuristics.DocumentSetIntersectionHeuristic
 
 import scala.collection.mutable
 
 case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:Int, maxIterations:Int){
 
+  def remainingCost: Int = {
+    val remainingSteps = groundTruth.collect{
+      case (a, b, papers) if !stepsDiscovered((a, b)) => papers
+    }.flatten
+
+    val set = collection.immutable.TreeSet.empty[String] ++ remainingSteps
+
+    val n = DocumentSetIntersectionHeuristic.efficientUnionIntersectionSize(set, this.agent.papersRead)
+
+    set.size - n
+  }
 
 
   def this(agent:PolicySearchAgent, referenceState:FRSearchState) {

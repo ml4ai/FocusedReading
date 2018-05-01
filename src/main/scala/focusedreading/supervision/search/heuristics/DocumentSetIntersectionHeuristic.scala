@@ -39,13 +39,16 @@ class DocumentSetIntersectionHeuristic(links:Seq[(Participant, Participant)], qu
     val union = setsToConsider.fold(TreeSet.empty[String])((a, b) => a union b)
 
     // Subtract the papers that have already been read by the system
-    union.size - efficientUnionIntersectionSize(union, state.agent.papersRead)
+    union.size - DocumentSetIntersectionHeuristic.efficientUnionIntersectionSize(union, state.agent.papersRead)
 
     // Return the size of the union
     //union.size.toDouble
   }
 
-  private def efficientUnionIntersectionSize(a:SortedSet[String], b:SortedSet[String]):Int = {
+}
+
+object DocumentSetIntersectionHeuristic {
+  def efficientUnionIntersectionSize(a:SortedSet[String], b:SortedSet[String]):Int = {
 
 
     if(a.isEmpty || b.isEmpty)
@@ -81,5 +84,4 @@ class DocumentSetIntersectionHeuristic(links:Seq[(Participant, Participant)], qu
 
     size
   }
-
 }
