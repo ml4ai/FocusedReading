@@ -9,7 +9,7 @@ import org.clulab.utils.Serializer
   */
 object SearchSolutionsAnalysis extends App {
 
-  type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction)]]]
+  type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]
 
   def printStatistics(collection: Iterable[Int]): Unit = {
     println(s"Min: ${collection.min}")
@@ -54,7 +54,7 @@ object SearchSolutionsAnalysis extends App {
     printFrequencies(solutionLengths)
     println()
 
-    val sequences = solutions.map{_.map{case (s, a) => a}}
+    val sequences = solutions.map{_.map{case (s, a, c) => a}}
 
     // Action frequency statistics
     val actions = sequences.flatten
@@ -66,6 +66,15 @@ object SearchSolutionsAnalysis extends App {
 //    println("Solution sequences statistics")
 //    println(s"Different sequences: ${sequences.toSet.size}")
 //    printFrequencies(sequences)
+
+    val costs = solutions.map{_.head._3.toInt}
+
+    // Cost statistics
+    println("Cost statistics")
+    printStatistics(costs)
+    println()
   }
+
+
 
 }
