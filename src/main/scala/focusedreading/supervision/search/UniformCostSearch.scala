@@ -10,8 +10,10 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
 
   protected val queue:mutable.PriorityQueue[Node] = new mutable.PriorityQueue[Node]()
 
+  def estimateRemaining(state:FRSearchState):Int = 0
+
   protected def createNode(state:FRSearchState, node:Option[Node], action:Option[FocusedReadingAction]):Node = {
-    Node(state, state.cost.toInt, 0, state.remainingCost, action, node)
+    Node(state, /*state.cost.toInt, 0, state.remainingCost,*/ action, node)
   }
 
   def solve():Option[Node] ={

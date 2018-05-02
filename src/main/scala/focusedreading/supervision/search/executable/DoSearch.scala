@@ -61,15 +61,15 @@ object DoSearch extends App{
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  def actionSequence(node:Node):List[Result] = {
+  def actionSequence(node:Node, searcher:UniformCostSearch):List[Result] = {
     if(node.parent.isDefined){
       if(node.action.isDefined){
         val state = node.state
         val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
-        (frState, node.action.get, node.pathCost, node.estimatedRemaining, node.remaining) :: actionSequence(node.parent.get)
+        (frState, node.action.get, node.pathCost, searcher.estimateRemaining(state), node.state.remainingCost) :: actionSequence(node.parent.get, searcher)
       }
       else{
-        actionSequence(node.parent.get)
+        actionSequence(node.parent.get, searcher)
       }
     }
     else{
@@ -121,7 +121,7 @@ object DoSearch extends App{
 
     val agent = new PolicySearchAgent(participantA, participantB)
 
-    val initialState = FRSearchState(agent, path, 0, maxIterations) // TODO: Fix me
+    val initialState = FRSearchState(agent, path, 0, maxIterations)
     //val solver = new UniformCostSearch(initialState)
     //val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
     val solver = new AStar(initialState)
@@ -129,7 +129,7 @@ object DoSearch extends App{
     val result = solver.solve()
 
     solutions(k) = result match {
-      case Some(r) => Some(actionSequence(r))
+      case Some(r) => Some(actionSequence(r, solver))
       case None => None
     }
   }
