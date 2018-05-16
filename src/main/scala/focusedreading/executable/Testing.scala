@@ -11,6 +11,7 @@ import focusedreading.tracing.AgentRunTrace
 import focusedreading.{Connection, Participant}
 import org.sarsamora.policies._
 import com.typesafe.config.ConfigFactory
+import focusedreading.policies.ClassifierPolicy
 import focusedreading.reinforcement_learning.states.NormalizationParameters
 
 import scala.collection.mutable
@@ -24,6 +25,7 @@ object Testing extends App with LazyLogging{
   val config = ConfigFactory.load()
   val testingConfig = config.getConfig("testing")
   val outputConfig = testingConfig.getConfig("output")
+  val supervisionConfig = config.getConfig("expertOracle")
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
@@ -104,7 +106,8 @@ object Testing extends App with LazyLogging{
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
     val policyPath = testingConfig.getString("policyFile")
-    val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
+    //val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
+    val policy = new ClassifierPolicy(supervisionConfig.getString("classifierPath"))
 
 
     // Instantiate the normalization parameters, if necessary

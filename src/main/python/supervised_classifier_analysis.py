@@ -55,14 +55,33 @@ if __name__ == "__main__":
     print "Features selected out of %i" % (X.shape[1]-1)
     print features[grid_search.best_estimator_.named_steps.feature_selection.support_]
 
-    selected_estimator = grid_search.best_estimator_
+    selected_estimator = grid_search.best_estimator_.named_steps.classification
+    feature_selector = grid_search.best_estimator_.named_steps.feature_selection
 
+    X_train = feature_selector.transform(X_train)
+    X_test = feature_selector.transform(X_test)
     # Fit to the training data
     selected_estimator.fit(X_train, y_train)
     y_pred = selected_estimator.predict(X_test)
 
+    from collections import Counter
+    di = {v:k for k, v in label_function.iteritems()}
+
+
+
     print classification_report(y_test, y_pred, target_names=labels.unique())
 
+    print
+
+    c = Counter([di[i] for i in list(y_pred)])
+    print c
+
+    print
 
 
-    #print features[rfecv.support_]
+
+    with open("predictions.txt", 'w') as f:
+        for i in y_pred:
+            f.write('%s\n' % i)
+
+

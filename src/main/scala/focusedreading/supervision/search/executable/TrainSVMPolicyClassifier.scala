@@ -3,9 +3,11 @@ package focusedreading.supervision.search.executable
 import collection.JavaConversions._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.reinforcement_learning.actions.FocusedReadingAction
+import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.FocusedReadingState
-import org.clulab.learning.{LibSVMClassifier, LinearKernel, RVFDataset, RVFDatum}
+import focusedreading.supervision.search.{LibSVMClassifier, LinearKernel}
+import org.clulab.learning.Datasets.mkTrainIndices
+import org.clulab.learning.{RVFDataset, RVFDatum}
 import org.clulab.utils.Serializer
 import org.clulab.struct.Counter
 
@@ -20,16 +22,25 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   val trainingConfig = config.getConfig("training")
   val supervisionConfig = config.getConfig("expertOracle")
 
-  val solutionsPath = supervisionConfig.getString("solutionsPath")
+  val trainingSolutionsPath = supervisionConfig.getString("trainingSolutionsPath")
+  val testingSolutionsPath = supervisionConfig.getString("solutionsPath")
   val classifierPath = supervisionConfig.getString("classifierPath")
-  val toBeExcluded = supervisionConfig.getStringList("excludedFeatures").toSet
+  val toBeIncluded = supervisionConfig.getStringList("includedFeatures").toSet
 
   // Desearalize the training data
   logger.info("Loading the training data")
-  val dataSet = Serializer.load[SolutionsMap](solutionsPath)
+  val rawDataSet = Serializer.load[SolutionsMap](trainingSolutionsPath)
+  val rawTestingDataSet = Serializer.load[SolutionsMap](testingSolutionsPath)
 
   // Keep only those which are useful, and convert them into feature vectors
-  val rawDataPoints = dataSet.values.collect { case Some(s) => s }.flatMap {
+  val rawDataPoints = rawDataSet.values.collect { case Some(s) => s }.flatMap {
+    case items =>
+      items.map {
+        case (state, action, _) => (state.toFeatures(), action)
+      }
+  }
+
+  val rawTestingDataPoints = rawTestingDataSet.values.collect { case Some(s) => s }.flatMap {
     case items =>
       items.map {
         case (state, action, _) => (state.toFeatures(), action)
@@ -42,19 +53,31 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   // Convert the data into Processors' RVFDatum instances and build the dataset
   logger.info("Marshalling the training data")
   val data = rawDataPoints map {case(m, l) =>
-    (SVMPolicyClassifier.removeFeatures(m, toBeExcluded), l)} map SVMPolicyClassifier.toDatum
+    (SVMPolicyClassifier.filterFeatures(m, toBeIncluded), l)} map SVMPolicyClassifier.toDatum
 
   val dataset = new RVFDataset[FocusedReadingAction, String]()
 
   data foreach { dataset += _}
 
+  val testingData = rawTestingDataPoints map {case(m, l) =>
+    (SVMPolicyClassifier.filterFeatures(m, toBeIncluded), l)} map SVMPolicyClassifier.toDatum
+
 
   // Instantiate a LibSVMClassifier with the default parameters
   logger.info("Training classifier")
-  val classifier = new LibSVMClassifier[FocusedReadingAction, String](LinearKernel)
+  val classifier = new LibSVMClassifier[FocusedReadingAction, String](LinearKernel, C = 0.1, cacheSize = 200, probability = false)
 
   // Train it
-  classifier.train(dataset)
+  val x = dataset.labels map dataset.labelLexicon.get groupBy identity mapValues (_.size)
+  val indices = mkTrainIndices(dataset.size, None)
+  val weights = Seq(ExploitEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
+    ExploreEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
+    ExploitEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction],
+    ExploreEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction]).zip(supervisionConfig.getDoubleList("classWeights")).map{case(k, v) => k -> v.toDouble}.toMap
+  classifier.train(dataset, indices, Some(weights))
+
+  // Test it on the held out data
+  val predictions = testingData map classifier.classOf
 
   // Save the trained model to disk
   logger.info("Storing model")
@@ -85,12 +108,12 @@ object SVMPolicyClassifier {
   }
 
   /**
-    * Helper method to filter out features not meant to be included in the training procedure
+    * Helper method to filter in features meant to be included in the training procedure
     * @param featuresMap Features' Map with the values
-    * @param toBeRemoved Set with the feature names to be removed
+    * @param toBeKept Set with the feature names to be removed
     * @return A new map without the specified keys
     */
-  def removeFeatures(featuresMap:Map[String, Double],
-                     toBeRemoved:Set[String]):Map[String, Double] = featuresMap.filterNot{case (k, v) => toBeRemoved.contains(k)}
+  def filterFeatures(featuresMap:Map[String, Double],
+                     toBeKept:Set[String]):Map[String, Double] = featuresMap.filter{case (k, v) => toBeKept.contains(k)}
 
 }

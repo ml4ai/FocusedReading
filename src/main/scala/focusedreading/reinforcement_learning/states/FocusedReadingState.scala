@@ -75,11 +75,13 @@ case class FocusedReadingState(paRank:Double,
     }
   }
 
+  override def toFeatures: Map[String, Double] = this.toFeatures(normalize = true)
+
   /**
     * Convert the state representation to feature values used by a learning component
     * @return Map of feature names -> feature values
     */
-  override def toFeatures():Map[String, Double] = {
+  def toFeatures(normalize:Boolean = true):Map[String, Double] = {
 
 
     val featureValues = Map[String, Double](
@@ -111,7 +113,7 @@ case class FocusedReadingState(paRank:Double,
 
     // Normalize if requested
     val retVal = this.normalizationParameters match {
-      case Some(parameters) => parameters.normalize(featureValues)
+      case Some(parameters) => if(normalize) parameters.normalize(featureValues) else featureValues
       case None => featureValues
     }
 
