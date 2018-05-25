@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     print
 
-
+    print selected_estimator.class_weight_
 
     with open("predictions.txt", 'w') as f:
         for i in y_pred:

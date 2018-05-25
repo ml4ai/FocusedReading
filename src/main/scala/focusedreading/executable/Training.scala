@@ -134,14 +134,14 @@ object Training extends App with LazyLogging {
   val burnInEpisodes = trainingConfig.getInt("burnInEpisodes")
   val learningRate = trainingConfig.getDouble("learningRate")
   val decay = trainingConfig.getDouble("decayParameter")
-  val lambda = 1d // TODO: parameterize this
+  val lambda = 0.9d // TODO: parameterize this
 
   // TODO: Delete me
   val alphaDecrease = learningRate/numEpisodes
   val alphas = (0 to numEpisodes).toStream.map(i => learningRate-(i*alphaDecrease)).iterator
   //////////////////////////
 
-  val policyIteration = new SARSA(focusedReadingFabric, numEpisodes, burnInEpisodes, alphas, decay, lambda)
+  val policyIteration = new QLearning(focusedReadingFabric, numEpisodes, burnInEpisodes, alphas, decay, lambda)
   val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
   val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 

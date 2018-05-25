@@ -4,7 +4,7 @@ import java.io.{BufferedWriter, FileOutputStream, FileWriter, _}
 import java.nio.file.Paths
 
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.agents.{PolicySearchAgent, SearchAgent}
+import focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
 import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.tracing.AgentRunTrace
@@ -88,6 +88,8 @@ object Testing extends App with LazyLogging{
   var numQueries = 0
   val actionCounts = new mutable.HashMap[String, Int]()
   val ep = new mutable.ArrayBuffer[((Participant, Participant),(Participant, Participant))]()
+  val retrievedSolutions = mutable.ArrayBuffer[Int]()
+  val costs = mutable.ArrayBuffer[Int]()
 
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
 
@@ -106,8 +108,8 @@ object Testing extends App with LazyLogging{
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
     val policyPath = testingConfig.getString("policyFile")
-    //val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
-    val policy = new ClassifierPolicy(supervisionConfig.getString("classifierPath"))
+    val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
+    //val policy = new ClassifierPolicy(supervisionConfig.getString("classifierPath"))
 
 
     // Instantiate the normalization parameters, if necessary
@@ -128,6 +130,7 @@ object Testing extends App with LazyLogging{
     /////////////////////////////////////////////////////////
 
     val agent = new PolicySearchAgent(participantA, participantB, Some(policy), normalizationParameters = normalizationParameters)
+    //val agent = new RedisSQLiteSearchAgent(participantA, participantB)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
 
@@ -207,14 +210,16 @@ object Testing extends App with LazyLogging{
 //    val tracePath = AgentRunTrace.getFileName(datum)
 //
     var success = true
-//    recoveredPath match {
-//      case Some(_) =>
-//        AgentRunTrace.save(trace, Paths.get("traces", "successes", tracePath))
-//        success = true
-//      case None =>
-//        AgentRunTrace.save(trace, Paths.get("traces", "failures", tracePath))
-//        success = false
-//    }
+    recoveredPath match {
+      case Some(s) =>
+        //AgentRunTrace.save(trace, Paths.get("traces", "successes", tracePath))
+        retrievedSolutions += agent.iterationNum
+        costs += agent.papersRead.size
+        success = true
+      case None =>
+        //AgentRunTrace.save(trace, Paths.get("traces", "failures", tracePath))
+        success = false
+    }
 
     numQueries += agent.iterationNum
     val end = System.nanoTime()
@@ -340,4 +345,25 @@ object Testing extends App with LazyLogging{
       papersSw.write(s"$paperId\n")
   }
   papersSw.close()
+
+  // retrievedSolutions
+  logger.info(s"Min solution length: ${retrievedSolutions.min}")
+  logger.info(s"Max solution length: ${retrievedSolutions.max}")
+  val solLenAvg = retrievedSolutions.sum / retrievedSolutions.size
+  val solLenStd = Math.sqrt(retrievedSolutions.map(l => Math.pow(l-solLenAvg, 2)).sum / (retrievedSolutions.size - 1))
+  logger.info(s"Solution avg: $solLenAvg")
+  logger.info(s"Solution std: $solLenStd")
+
+  val freqs = retrievedSolutions.groupBy(identity).mapValues(_.size)
+  logger.info(s"$freqs")
+
+  logger.info("")
+
+  logger.info(s"Min cost: ${costs.min}")
+  logger.info(s"Max cost: ${costs.max}")
+  val costsAvg = costs.sum / costs.size
+  val costsStd = Math.sqrt(costs.map(l => Math.pow(l-costsAvg, 2)).sum / (costsAvg - 1))
+  logger.info(s"Cost avg: $costsAvg")
+  logger.info(s"Cost std: $costsStd")
+
 }
