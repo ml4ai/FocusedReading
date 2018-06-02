@@ -44,7 +44,7 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   // Follow the cascade query strategy
   override def choseQuery(source: Participant,
                           destination: Participant,
-                          model: SearchModel) = Query(Cascade, 50, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
+                          model: SearchModel) = Query(Disjunction, 50, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
 
 
 }

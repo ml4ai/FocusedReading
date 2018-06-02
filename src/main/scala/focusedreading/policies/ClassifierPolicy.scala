@@ -9,8 +9,13 @@ import focusedreading.supervision.search.LibSVMClassifier
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
+import org.clulab.utils.Serializer
 
-class ClassifierPolicy(classifierPath:String) extends Policy {
+class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]) extends Policy {
+
+  def this(classifierPath:String) = {
+    this(LibSVMClassifier.loadFrom[FocusedReadingAction, String](classifierPath))
+  }
 
   // Load the configuration parameters
   private val config = ConfigFactory.load()
@@ -18,9 +23,6 @@ class ClassifierPolicy(classifierPath:String) extends Policy {
   private val supervisionConfig = config.getConfig("expertOracle")
 
   private val toBeExcluded = supervisionConfig.getStringList("includedFeatures").toSet
-
-  // Load the classifier
-  private val classifier = LibSVMClassifier.loadFrom[FocusedReadingAction, String](classifierPath)
 
   override def selectAction(s: State, possibleActions: Seq[Action]): Action = {
     // Create a datum out of the state
@@ -42,5 +44,7 @@ class ClassifierPolicy(classifierPath:String) extends Policy {
     * Don't need to implement this
     * @param path
     */
-  override def save(path: String): Unit = Unit
+  override def save(path: String): Unit = {
+    classifier.saveTo(path)
+  }
 }

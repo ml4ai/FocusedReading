@@ -43,6 +43,7 @@ object RankBin extends Enumeration {
   * @param exploreManyIRScores IR scores of the exploration IR query
   * @param exploitIRScores IR scores of the exploritation IR query
   */
+@SerialVersionUID(6990130339981853648L)
 case class FocusedReadingState(paRank:Double,
                                pbRank:Double,
                                iteration:Int,

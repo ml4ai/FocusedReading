@@ -81,6 +81,30 @@ object Testing extends App with LazyLogging{
     writer.write("\n==========\n")
   }
 
+  def referencePathContained(path:Seq[Connection], reference:Seq[String]):Boolean = {
+    val p = (path map (_.controller.id)) ++ Seq(path.last.controlled.id)
+    if(p.length < reference.length)
+      false
+    else {
+      val flags = Array.fill(reference.size)(false)
+
+      val iterator = p.iterator
+
+      for ((refElem, ix) <- reference.zipWithIndex) {
+        var shortcut = false
+        while(iterator.hasNext && !shortcut){
+          val n = iterator.next()
+          if(n == refElem){
+            flags(ix) = true
+            shortcut = true
+          }
+        }
+      }
+
+      flags.reduce((a, b) => a & b)
+    }
+  }
+
   val valueLoader = new FocusedReadingActionValues
 
   val times = new mutable.ArrayBuffer[Long]
@@ -94,6 +118,8 @@ object Testing extends App with LazyLogging{
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
 
   val writer = new OutputStreamWriter(new FileOutputStream(outputConfig.getString("evidence")))
+
+  var referenceRetrieved = 0
 
   for((datum, ix) <- dataSet.zipWithIndex){
 
@@ -129,7 +155,7 @@ object Testing extends App with LazyLogging{
     }
     /////////////////////////////////////////////////////////
 
-    val agent = new PolicySearchAgent(participantA, participantB, Some(policy), normalizationParameters = normalizationParameters)
+     val agent = new PolicySearchAgent(participantA, participantB, Some(policy), normalizationParameters = normalizationParameters)
     //val agent = new RedisSQLiteSearchAgent(participantA, participantB)
     // val agent = new SQLiteMultiPathSearchAgent(participantA, participantB)
     agent.focusedSearch(participantA, participantB)
@@ -214,6 +240,7 @@ object Testing extends App with LazyLogging{
       case Some(s) =>
         //AgentRunTrace.save(trace, Paths.get("traces", "successes", tracePath))
         retrievedSolutions += agent.iterationNum
+        referenceRetrieved += (if(referencePathContained(s, datum)) 1 else 0)
         costs += agent.papersRead.size
         success = true
       case None =>
@@ -229,18 +256,18 @@ object Testing extends App with LazyLogging{
 
     bootstrap += (ix -> (success, agent.iterationNum, agent.papersRead.mkString(",")))
 
-    agent.actionCounters foreach {
-      case (k, v) =>
-        if(actionCounts.contains(k))
-          actionCounts(k) += v
-        else
-          actionCounts += k -> v
-    }
-
-    agent.chosenEndpointsLog foreach {
-      x=>
-        ep += x
-    }
+//    agent.actionCounters foreach {
+//      case (k, v) =>
+//        if(actionCounts.contains(k))
+//          actionCounts(k) += v
+//        else
+//          actionCounts += k -> v
+//    }
+//
+//    agent.chosenEndpointsLog foreach {
+//      x=>
+//        ep += x
+//    }
 
     logger.info("")
   }
@@ -365,5 +392,11 @@ object Testing extends App with LazyLogging{
   val costsStd = Math.sqrt(costs.map(l => Math.pow(l-costsAvg, 2)).sum / (costsAvg - 1))
   logger.info(s"Cost avg: $costsAvg")
   logger.info(s"Cost std: $costsStd")
+  logger.info("")
+  logger.info(s"Reference path nmatches: $referenceRetrieved")
+
+  val costsow = new BufferedWriter(new FileWriter("costs.txt"))
+  costs.foreach{ c => costsow.write(s"$c\n")}
+  costsow.close()
 
 }
