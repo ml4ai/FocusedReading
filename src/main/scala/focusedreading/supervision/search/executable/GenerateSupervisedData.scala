@@ -25,7 +25,7 @@ object GenerateSupervisedData extends App {
     val rawDataPoints = dataSet.values.collect{case Some(s) => s}.flatMap{
       case items =>
         items.map{
-          case (state, action, _) => (state.toFeatures(), action)
+          case (state, action, _) => (state.toFeatures, action)
         }
     }
 

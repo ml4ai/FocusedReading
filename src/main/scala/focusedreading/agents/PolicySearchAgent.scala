@@ -8,7 +8,7 @@ import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
 import focusedreading.models.{EfficientSearchModel, GFSModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters, RankBin}
+import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters, RankBin}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
@@ -217,14 +217,14 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
         pbQueryLogCount, sameComponent, paIntro, pbIntro, paUngrounded,
         pbUngrounded, exploreFewIRScores, exploreManyIRScores,
-        exploitIRScores, unchangedIterations, normalizationParameters)
+        exploitIRScores, unchangedIterations)
     }
     else{
 
       FocusedReadingState(0, 0, iterationNum, 0,
         0, false, 0, 0, false,
         false, Seq(0), Seq(0),
-        Seq(0), 0, normalizationParameters)
+        Seq(0), 0)
     }
   }
 

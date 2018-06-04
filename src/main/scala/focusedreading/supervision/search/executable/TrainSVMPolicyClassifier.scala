@@ -36,14 +36,14 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   val rawDataPoints = rawDataSet.values.collect { case Some(s) => s }.flatMap {
     case items =>
       items.map {
-        case (state, action, _) => (state.toFeatures(), action)
+        case (state, action, _) => (state.toFeatures, action)
       }
   }
 
   val rawTestingDataPoints = rawTestingDataSet.values.collect { case Some(s) => s }.flatMap {
     case items =>
       items.map {
-        case (state, action, _) => (state.toFeatures(), action)
+        case (state, action, _) => (state.toFeatures, action)
       }
   }
 
