@@ -4,7 +4,7 @@ import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.models.SearchModel
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState}
+import focusedreading.reinforcement_learning.states.FocusedReadingState
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State

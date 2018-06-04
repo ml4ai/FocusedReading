@@ -26,7 +26,7 @@ class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]
 
   override def selectAction(s: State, possibleActions: Seq[Action]): Action = {
     // Create a datum out of the state
-    val features = SVMPolicyClassifier.filterFeatures(s.asInstanceOf[FocusedReadingState].toFeatures(false), toBeExcluded)
+    val features = SVMPolicyClassifier.filterFeatures(s.asInstanceOf[FocusedReadingState].toFeatures(None), toBeExcluded)
     // Ugly to add a dummy label, but hey
     val datum = SVMPolicyClassifier.toDatum((features, ExploitEndpoints_ExploitQuery()))
     // Classify it

@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
-import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, FocusedReadingState, NormalizationParameters}
+import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, Policy}

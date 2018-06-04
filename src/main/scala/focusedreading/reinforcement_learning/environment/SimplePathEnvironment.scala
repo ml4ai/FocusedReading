@@ -7,7 +7,7 @@ import org.sarsamora.actions.Action
 import org.sarsamora.states.State
 import focusedreading.agents.FocusedReadingStage
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingCompositeState, NormalizationParameters}
+import focusedreading.reinforcement_learning.states.NormalizationParameters
 import org.sarsamora.policies.Policy
 
 

@@ -8,6 +8,9 @@ package focusedreading.reinforcement_learning.states
   */
 
 import focusedreading.agents.FocusedReadingStage
+import org.json4s._
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization.{write, read}
 
 import collection.mutable
 import org.sarsamora.states.State
@@ -57,8 +60,7 @@ case class FocusedReadingState(paRank:Double,
                                exploreFewIRScores:Seq[Float],
                                exploreManyIRScores:Seq[Float],
                                exploitIRScores:Seq[Float],
-                               unchangedIterations:Int,
-                               normalizationParameters: Option[NormalizationParameters]
+                               unchangedIterations:Int
                               ) extends State{
 
   // Aggregate the scores
@@ -76,13 +78,13 @@ case class FocusedReadingState(paRank:Double,
     }
   }
 
-  override def toFeatures: Map[String, Double] = this.toFeatures(normalize = true)
+  override def toFeatures: Map[String, Double] = this.toFeatures(normalizationParameters = None)
 
   /**
     * Convert the state representation to feature values used by a learning component
     * @return Map of feature names -> feature values
     */
-  def toFeatures(normalize:Boolean = true):Map[String, Double] = {
+  def toFeatures(normalizationParameters: Option[NormalizationParameters]):Map[String, Double] = {
 
 
     val featureValues = Map[String, Double](
@@ -113,12 +115,20 @@ case class FocusedReadingState(paRank:Double,
     FocusedReadingState.recordObsevation(featureValues)
 
     // Normalize if requested
-    val retVal = this.normalizationParameters match {
-      case Some(parameters) => if(normalize) parameters.normalize(featureValues) else featureValues
+    val retVal = normalizationParameters match {
+      case Some(parameters) => parameters.normalize(featureValues)
       case None => featureValues
     }
 
     retVal
+  }
+
+
+  def toJson:String = {
+
+    implicit val formats = DefaultFormats
+
+    write(this)
   }
 }
 
@@ -166,10 +176,14 @@ object FocusedReadingState extends Serializable {
       Seq(),
       Seq(),
       Seq(),
-      0,
-      None
+      0
     )
 
-    dummyState.toFeatures().keySet
+    dummyState.toFeatures.keySet
+  }
+
+  def fromJson(data:String):FocusedReadingState = {
+    implicit val formats = DefaultFormats
+    read[FocusedReadingState](data)
   }
 }
