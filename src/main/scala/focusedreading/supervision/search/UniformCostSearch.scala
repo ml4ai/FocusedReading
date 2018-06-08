@@ -13,7 +13,7 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
   def estimateRemaining(state:FRSearchState):Int = 0
 
   protected def createNode(state:FRSearchState, node:Option[Node], action:Option[FocusedReadingAction]):Node = {
-    Node(state, /*state.cost.toInt, 0, state.remainingCost,*/ action, node)
+    Node(state, /*state.cost.toInt, 0, state.remainingCost,*/ action, node, node match { case Some(n) => n.depth +1; case None => 0})
   }
 
   def solve():Option[Node] ={

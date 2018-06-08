@@ -9,7 +9,7 @@ import focusedreading.reinforcement_learning.actions.FocusedReadingAction
   * @param action Action taken whose outcome is the current state
   * @param parent Parent node in the search tree
   */
-case class Node(state:FRSearchState, action:Option[FocusedReadingAction], parent:Option[Node]) extends Ordered[Node] {
+case class Node(state:FRSearchState, action:Option[FocusedReadingAction], parent:Option[Node], depth:Int) extends Ordered[Node] {
 
   /**
     * Compares two nodes based on their path cost
@@ -38,5 +38,5 @@ case class Node(state:FRSearchState, action:Option[FocusedReadingAction], parent
     case _ => false
   }
 
-  def pathCost = state.agent.papersRead.size
+  def pathCost = state.cost//state.agent.papersRead.size
 }

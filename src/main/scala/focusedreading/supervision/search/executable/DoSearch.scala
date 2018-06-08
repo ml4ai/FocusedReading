@@ -19,8 +19,9 @@ import scala.io.Source
 
 
 object DoSearch extends App{
-                // State, action, Cost, estimated remaining cost, Actual Remaining cost
-  type Result = (FocusedReadingState, FocusedReadingAction, Int, Int, Int)
+
+  // State, action, Cost, estimated remaining cost, Actual Remaining cost
+  case class Result(state:FocusedReadingState, action:FocusedReadingAction, cost:Double, estimatedRemaining:Int, actualRemaining:Int)
 
   def persistResults(results:Map[(String, String), Option[Seq[Result]]], path:String){
     val osw = new ObjectOutputStream(new FileOutputStream(path))
@@ -66,7 +67,7 @@ object DoSearch extends App{
       if(node.action.isDefined){
         val state = node.state
         val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
-        (frState, node.action.get, node.pathCost, searcher.estimateRemaining(state), node.state.remainingCost) :: actionSequence(node.parent.get, searcher)
+        Result(frState, node.action.get, node.pathCost, searcher.estimateRemaining(state), node.state.remainingCost) :: actionSequence(node.parent.get, searcher)
       }
       else{
         actionSequence(node.parent.get, searcher)
@@ -122,9 +123,9 @@ object DoSearch extends App{
     val agent = new PolicySearchAgent(participantA, participantB)
 
     val initialState = FRSearchState(agent, path, 0, maxIterations)
-    //val solver = new UniformCostSearch(initialState)
+    val solver = new UniformCostSearch(initialState)
     //val solver = new IterativeLengtheningSearch(agent, path, stepSize*10, stepSize, stepSize*100)
-    val solver = new AStar(initialState)
+    //val solver = new AStar(initialState)
 
     val result = solver.solve()
 

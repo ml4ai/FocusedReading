@@ -1,21 +1,15 @@
 package focusedreading.executable
 
-import breeze.linalg.{DenseVector, linspace}
-import breeze.plot.{Figure, plot}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
 import focusedreading.imitation_learning.DAgger
-import focusedreading.policies.OraclePolicy
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
-import org.clulab.utils.Serializer
 import org.sarsamora.actions.Action
-import org.sarsamora.policies.{EpGreedyPolicy, Policy}
-import org.sarsamora.policy_iteration.td.QLearning
-import org.sarsamora.policy_iteration.td.value_functions.LinearApproximationActionValues
+import org.sarsamora.policies.Policy
 import org.sarsamora.policy_iteration.{EpisodeObservation, EpisodeObserver, IterationObservation}
 import org.sarsamora.{Decays, scalaRand}
 
@@ -38,38 +32,13 @@ object TrainingImitation extends App with LazyLogging {
 
   val inputPath = supervisionConfig.getString("inputFile")
 
-  val trainingSolutionsPath = supervisionConfig.getString("trainingSolutionsPath")
-
-  // Desearalize the training data
-  logger.info("Loading the training data")
-  val groundTruth = Serializer.load[SolutionsMap](trainingSolutionsPath)
-
-  val trainingPaths = Source.fromFile(inputPath).getLines().toList.map(_.split("\t")).map(s => (s, s.sliding(2).toList))
-
-  val trainingData = trainingPaths.map{
-    case (chain, s) =>{
-      val actions = s.map{
-        x =>
-          val pair = (x.head, x.last)
-          groundTruth.getOrElse(pair, None)
-      }
-
-      if(actions.count{case None => true; case _ => false} == 0)
-        Some((chain, actions flatMap (_.get) map (_._2)))
-      else
-        None
-    }
-
-  }.collect{case Some(s) => s}
+  val trainingPaths = Source.fromFile(inputPath).getLines().toList.map(_.split("\t"))
 
   def randomizedData = {
-    scalaRand.shuffle(trainingData)
+    scalaRand.shuffle(trainingPaths)
   }
 
-  //val dataSet:Iterator[((String, String), Seq[String])] = Iterator.continually(randomizedData).flatten
-
-  val dataSet:Iterator[(Array[String], List[FocusedReadingAction])] = Iterator.continually(randomizedData).flatten
-
+  val dataSet:Iterator[Array[String]] = Iterator.continually(randomizedData).flatten
 
   // Instantiate the normalization parameters, if necessary
   val normalizationConfig = trainingConfig.getConfig("normalization")
@@ -93,7 +62,6 @@ object TrainingImitation extends App with LazyLogging {
   // Keep track of policy iteration statistics
   var episodeCounts = 0
 
-
   val episodeObserver = new EpisodeObserver{
     override def observeIteration(data: IterationObservation): Unit = Unit
 
@@ -104,12 +72,12 @@ object TrainingImitation extends App with LazyLogging {
   }
   ////////////////////////////////////////////////////////
 
-  val imitationLearningFabric = () => {
+  def imitationLearningFabric() = {
     if(dataSet.hasNext){
       val episodeData = dataSet.next
-      val (sequence, actions) = episodeData
+      val sequence  = episodeData
 
-      Some((actions, SimplePathEnvironment(Participant("", sequence.head), Participant("", sequence.last), sequence map {p => Participant("", p)}, normalizationParameters)))
+      Some(SimplePathEnvironment(Participant("", sequence.head), Participant("", sequence.last), sequence map {p => Participant("", p)}, normalizationParameters))
     }
     else
       None
@@ -123,7 +91,7 @@ object TrainingImitation extends App with LazyLogging {
   val alphas = Decays.exponentialDecay(learningRate, 0.1, epochs, 0).iterator
 
 
-  val imitator = new DAgger(imitationLearningFabric, epochs, trainingData.size, alphas)
+  val imitator = new DAgger(imitationLearningFabric, epochs, trainingPaths.size, alphas)
   val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
 
 

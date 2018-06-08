@@ -17,7 +17,7 @@ class AStar(initialState:FRSearchState, maxCost:Double = Double.PositiveInfinity
   override val queue = new mutable.PriorityQueue[Node]()(Ordering.by[Node, Double](n => n.pathCost + heuristic.estimateCost(n.state)))
 
   override def createNode(state: FRSearchState, node: Option[Node], action: Option[FocusedReadingAction]): Node = {
-    Node(state, /*state.cost.toInt, heuristic.estimateCost(state).toInt, state.remainingCost,*/ action, node)
+    Node(state, /*state.cost.toInt, heuristic.estimateCost(state).toInt, state.remainingCost,*/ action, node, node match { case Some(n) => n.depth +1; case None => 0})
   }
 
   override def estimateRemaining(state: FRSearchState): Int = {

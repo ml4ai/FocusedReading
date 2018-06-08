@@ -9,19 +9,58 @@ import org.sarsamora.policies.Policy
 import org.sarsamora.policy_iteration.EpisodeObserver
 import org.sarsamora.states.State
 import java.util.Random
-import collection.JavaConversions._
 
-import com.typesafe.config.ConfigFactory
+import collection.JavaConversions._
+import com.typesafe.config.{Config, ConfigFactory}
+import focusedreading.ir.LuceneQueries
+import focusedreading.{Connection, Participant}
 import focusedreading.reinforcement_learning.actions
-import focusedreading.supervision.search.{LibSVMClassifier, LinearKernel}
-import focusedreading.supervision.search.executable.SVMPolicyClassifier
+import focusedreading.sqlite.SQLiteQueries
+import focusedreading.supervision.search.{FRSearchState, LibSVMClassifier, LinearKernel, UniformCostSearch}
+import focusedreading.supervision.search.executable.{DoSearch, SVMPolicyClassifier}
 import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DAgger(episodeFabric:() => Option[(Seq[FocusedReadingAction], SimplePathEnvironment)], epochs:Int, epochSize:Int, alphas:Iterator[Double]) {
+class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) {
+
+  // Load the configuration parameters
+  private val config = ConfigFactory.load()
+  private val imitationConfig = config.getConfig("imitation")
+  private val toBeIncluded = imitationConfig.getStringList("includedFeatures").toSet
+  private val maxIterations = config.getConfig("MDP").getInt("maxIterations")
+
+  // Interning strings
+  println("Interning strings ...")
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val da = new SQLiteQueries(sqlitePath)
+
+  println("Interning PMCIDs...")
+  val allPMCIDs = da.getAllPMCIDs
+  allPMCIDs foreach (_.intern)
+
+  println("Interning participant strings...")
+  val allParticipants = da.getAllParticipants
+  allParticipants foreach (_.intern)
+
+  println("Interning participant instances...")
+  allParticipants foreach (p => Participant.get("", p.intern))
+
+  println("Interning connection instances...")
+  val allConnections = da.getAllInteractions
+  allConnections foreach {
+    case (controller, controlled, direction) =>
+      val pa = Participant.get("", controller)
+      val pb = Participant.get("", controlled)
+      Connection.get(pa, pb, direction)
+  }
+
+  // To avoid a race condition further down
+  LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
+
+  private implicit def state2FrState(s:State):FocusedReadingState = s.asInstanceOf[FocusedReadingState]
 
   // (state, predicted action, real action)
   private val experience = new mutable.ListBuffer[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]
@@ -33,11 +72,34 @@ class DAgger(episodeFabric:() => Option[(Seq[FocusedReadingAction], SimplePathEn
     ExploitEndpoints_ExploreManyQuery()
   )
 
-  // Load the configuration parameters
-  val config = ConfigFactory.load()
-  val imitationConfig = config.getConfig("imitation")
-  val toBeIncluded = imitationConfig.getStringList("includedFeatures").toSet
+  private val optimalSequencesCache:SolutionsCache = new MapCache()
 
+  def askExpert(environment: SimplePathEnvironment): FocusedReadingAction = {
+
+    val agent = environment.agent
+    val state = agent.observeState.asInstanceOf[FocusedReadingState]
+
+    import FRSearchState.GoldDatum
+    val reference:GoldDatum = environment.referencePath.sliding(2).map(r => (r.head.id, r(1).id, Seq.empty[String])).toSeq
+
+    // Look up the cache
+    optimalSequencesCache get state match {
+      case Some(choice) => choice.head.action
+      case None =>
+        // Doesn't contain it, hence running UCS to find it
+        val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
+        searcher.solve() match {
+          case Some(solution) =>
+            //TODO Add the solution to the cache
+            val sequence: Seq[DoSearch.Result] = DoSearch.actionSequence(solution, searcher)
+            val choice = sequence.head.action
+            optimalSequencesCache.cache(state, sequence)
+            choice
+            // TODO add a random choice with a controlled seed here
+          case None => ExploreEndpoints_ExploitQuery()
+        }
+    }
+  }
 
   def learnPolicy(observer:Option[EpisodeObserver] = None):Policy = {
 
@@ -51,44 +113,42 @@ class DAgger(episodeFabric:() => Option[(Seq[FocusedReadingAction], SimplePathEn
       var oracleTimes = 0
       var policyTimes = 0
 
-      println(s"DAgger info: Epoch $epoch\tAlpha: $alpha\tData set size: ${experience.size}")
-      for(ix <- 0 to epochSize){
-        val (expertChoices, environment) = episodeFabric().get
-        val actionLog = new mutable.ListBuffer[FocusedReadingAction]()
+      println(s"DAGGER info: Epoch $epoch\tAlpha: $alpha\tData set size: ${experience.size}")
 
-        val consumedExpertChoices = Array.fill(expertChoices.size)(false)
+      for(_ <- 0 to epochSize){
 
-        while(!environment.finishedEpisode && !consumedExpertChoices.forall(identity)){
-          val state = environment.observeState.asInstanceOf[FocusedReadingState]
+        episodeFabric match {
+          case Some(environment) =>
+            val actionLog = new mutable.ListBuffer[FocusedReadingAction]()
 
-          //val oracleChoice = consumedExpertChoices.dropWhile{case (action, found) => found}.head._1//sampleFromOracle(expertChoices, actionLog)
-          val oracleChoice = ((expertChoices zip consumedExpertChoices).zipWithIndex dropWhile {
-            case ((candidate, used), ix) => used
-          }).head
+            while(!environment.finishedEpisode){
+              val state = environment.observeState.asInstanceOf[FocusedReadingState]
 
-          consumedExpertChoices(oracleChoice._2) = true
+              val oracleChoice = askExpert(environment)
 
-          val r = sampler.nextDouble()
-          val selectedAction = r match {
-            case x:Double if x <= alpha =>
-              // Sample from the expert
-              oracleTimes += 1
-              oracleChoice._1._1
-            case x:Double if x > alpha =>
-              // Sample from the policy
-              policyTimes += 1
-              sampleFromLearned(state, previousPolicy)
-          }
+              val r = sampler.nextDouble()
+              val selectedAction = r match {
+                case x:Double if x <= alpha =>
+                  // Sample from the expert
+                  oracleTimes += 1
+                  oracleChoice
+                case x:Double if x > alpha =>
+                  // Sample from the policy
+                  policyTimes += 1
+                  sampleFromLearned(state, previousPolicy)
+              }
 
-          actionLog += selectedAction
+              actionLog += selectedAction
 
-          environment.execute(selectedAction)
+              environment.execute(selectedAction)
 
-          val datum = (state, selectedAction, oracleChoice._1._1)
-          experience += datum
+              val datum = (state, selectedAction, oracleChoice)
+              experience += datum
+             }
+
+        case None => Unit
+
         }
-
-
 
       }
       println(s"DAgger info: Oracle choices: $oracleTimes\tPolicy choices: $policyTimes")
@@ -111,19 +171,6 @@ class DAgger(episodeFabric:() => Option[(Seq[FocusedReadingAction], SimplePathEn
       classifier.classOf(datum)
   }
 
-
-  def sampleFromOracle(expertChoices: Seq[FocusedReadingAction], actionLog: Seq[FocusedReadingAction]):FocusedReadingAction = {
-    val candidate = expertChoices.head
-    if(actionLog.isEmpty)
-      candidate
-    else {
-      val candidateIx = actionLog.indexOf(candidate)
-      if (candidateIx == -1)
-        candidate
-      else
-        sampleFromOracle(expertChoices.tail, actionLog.drop(candidateIx + 1))
-    }
-  }
 
   def trainClassifier(experience: Iterable[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]):LibSVMClassifier[FocusedReadingAction, String] = {
     val data = experience map {
