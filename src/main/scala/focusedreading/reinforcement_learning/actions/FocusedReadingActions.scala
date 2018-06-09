@@ -14,15 +14,19 @@ import org.sarsamora.value_functions.ActionValueLoader
 
 sealed class FocusedReadingAction() extends Action
 
-//case class ExploreManyQuery() extends FocusedReadingAction
-//
-//case class ExploreFewQuery() extends FocusedReadingAction
-//
-//case class ExploitQuery() extends FocusedReadingAction
-//
-//case class ExploreEndpoints() extends FocusedReadingAction
-//
-//case class ExploitEndpoints() extends FocusedReadingAction
+object FocusedReadingAction {
+  def apply(str:String): FocusedReadingAction = {
+    str match {
+      case "ExploitEndpoints_ExploreManyQuery()" => ExploitEndpoints_ExploreManyQuery()
+      case "ExploitEndpoints_ExploreFewQuery()" => ExploitEndpoints_ExploreFewQuery()
+      case "ExploitEndpoints_ExploitQuery()" => ExploitEndpoints_ExploitQuery()
+      case "ExploreEndpoints_ExploreManyQuery()" => ExploreEndpoints_ExploreManyQuery()
+      case "ExploreEndpoints_ExploreFewQuery()" => ExploreEndpoints_ExploreFewQuery()
+      case "ExploreEndpoints_ExploitQuery()" => ExploreEndpoints_ExploitQuery()
+      case _ => throw new Exception("Shouln't fall here. Check!!")
+    }
+  }
+}
 
 case class ExploitEndpoints_ExploreManyQuery() extends FocusedReadingAction
 case class ExploitEndpoints_ExploreFewQuery() extends FocusedReadingAction

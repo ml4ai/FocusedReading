@@ -47,7 +47,10 @@ object RankBin extends Enumeration {
   * @param exploitIRScores IR scores of the exploritation IR query
   */
 @SerialVersionUID(6990130339981853648L)
-case class FocusedReadingState(paRank:Double,
+case class FocusedReadingState(endpointA:String,
+                               endpointB:String,
+                               searchGraph:Set[(String, String, Boolean)],
+                               paRank:Double,
                                pbRank:Double,
                                iteration:Int,
                                paQueryLogCount:Int,
@@ -163,6 +166,7 @@ object FocusedReadingState extends Serializable {
 
   def featureNames:Set[String] = {
     val dummyState = new FocusedReadingState(
+      "","", Set(),
       0,
       0,
       0,

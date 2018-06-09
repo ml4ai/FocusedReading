@@ -174,6 +174,11 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
                         queryLog:Seq[(Participant, Participant)],
                         introductions:Map[Participant, Int]):State = {
 
+    val searchGraphElements = this.model.edges.map{
+      conn =>
+        (conn.controller.id, conn.controlled.id, conn.sign)
+    }.toSet
+
     if(queryLog.nonEmpty) {
 
 
@@ -214,14 +219,14 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       if(paRank < 0 || paRank > 1) println("PA rank is out of bounds")
       if(pbRank < 0 || pbRank > 1) println("PB rank is out of bounds")
 
-      FocusedReadingState(paRank, pbRank, iterationNum, paQueryLogCount,
+      FocusedReadingState(participantA.id, participantB.id, searchGraphElements, paRank, pbRank, iterationNum, paQueryLogCount,
         pbQueryLogCount, sameComponent, paIntro, pbIntro, paUngrounded,
         pbUngrounded, exploreFewIRScores, exploreManyIRScores,
         exploitIRScores, unchangedIterations)
     }
     else{
 
-      FocusedReadingState(0, 0, iterationNum, 0,
+      FocusedReadingState(participantA.id, participantB.id, searchGraphElements, 0, 0, iterationNum, 0,
         0, false, 0, 0, false,
         false, Seq(0), Seq(0),
         Seq(0), 0)

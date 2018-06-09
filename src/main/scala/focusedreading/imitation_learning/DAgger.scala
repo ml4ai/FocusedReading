@@ -72,7 +72,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     ExploitEndpoints_ExploreManyQuery()
   )
 
-  private val optimalSequencesCache:SolutionsCache = new MapCache()
+  private val optimalSequencesCache:SolutionsCache = new RedisCache()//new MapCache()
 
   def askExpert(environment: SimplePathEnvironment): FocusedReadingAction = {
 
