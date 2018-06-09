@@ -118,9 +118,9 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
       lastActionChosen = Some(action)
 
       val chosenEndpoints = action match {
-        case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
+        case ac if Seq(ExploreEndpoints_ExploitQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploreManyQuery).contains(ac) =>
           exploreEndpoints
-        case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploreManyQuery()).contains(ac) =>
+        case ac if Seq(ExploitEndpoints_ExploitQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploreManyQuery).contains(ac) =>
           exploitEndpoints
       }
 

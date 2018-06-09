@@ -17,23 +17,23 @@ sealed class FocusedReadingAction() extends Action
 object FocusedReadingAction {
   def apply(str:String): FocusedReadingAction = {
     str match {
-      case "ExploitEndpoints_ExploreManyQuery()" => ExploitEndpoints_ExploreManyQuery()
-      case "ExploitEndpoints_ExploreFewQuery()" => ExploitEndpoints_ExploreFewQuery()
-      case "ExploitEndpoints_ExploitQuery()" => ExploitEndpoints_ExploitQuery()
-      case "ExploreEndpoints_ExploreManyQuery()" => ExploreEndpoints_ExploreManyQuery()
-      case "ExploreEndpoints_ExploreFewQuery()" => ExploreEndpoints_ExploreFewQuery()
-      case "ExploreEndpoints_ExploitQuery()" => ExploreEndpoints_ExploitQuery()
+      case "ExploitEndpoints_ExploreManyQuery" => ExploitEndpoints_ExploreManyQuery
+      case "ExploitEndpoints_ExploreFewQuery" => ExploitEndpoints_ExploreFewQuery
+      case "ExploitEndpoints_ExploitQuery" => ExploitEndpoints_ExploitQuery
+      case "ExploreEndpoints_ExploreManyQuery" => ExploreEndpoints_ExploreManyQuery
+      case "ExploreEndpoints_ExploreFewQuery" => ExploreEndpoints_ExploreFewQuery
+      case "ExploreEndpoints_ExploitQuery" => ExploreEndpoints_ExploitQuery
       case _ => throw new Exception("Shouln't fall here. Check!!")
     }
   }
 }
 
-case class ExploitEndpoints_ExploreManyQuery() extends FocusedReadingAction
-case class ExploitEndpoints_ExploreFewQuery() extends FocusedReadingAction
-case class ExploitEndpoints_ExploitQuery() extends FocusedReadingAction
-case class ExploreEndpoints_ExploreManyQuery() extends FocusedReadingAction
-case class ExploreEndpoints_ExploreFewQuery() extends FocusedReadingAction
-case class ExploreEndpoints_ExploitQuery() extends FocusedReadingAction
+case object ExploitEndpoints_ExploreManyQuery extends FocusedReadingAction
+case object ExploitEndpoints_ExploreFewQuery extends FocusedReadingAction
+case object ExploitEndpoints_ExploitQuery extends FocusedReadingAction
+case object ExploreEndpoints_ExploreManyQuery extends FocusedReadingAction
+case object ExploreEndpoints_ExploreFewQuery extends FocusedReadingAction
+case object ExploreEndpoints_ExploitQuery extends FocusedReadingAction
 
 
 class FocusedReadingActionValues extends ActionValueLoader with StateParser {
@@ -59,12 +59,12 @@ class FocusedReadingActionValues extends ActionValueLoader with StateParser {
   override def loadActionValues(ast:JObject) = {
 
     val coefficients = ast \ "coefficients"
-    val valsExploitEpExploreManyQ = extractCoefficients(coefficients, ExploitEndpoints_ExploreManyQuery())
-    val valsExploitEpExploreFewQ = extractCoefficients(coefficients, ExploitEndpoints_ExploreFewQuery())
-    val valsExploitEpExploitQ = extractCoefficients(coefficients, ExploitEndpoints_ExploitQuery())
-    val valsExploreEpExploreFewQ = extractCoefficients(coefficients, ExploreEndpoints_ExploreFewQuery())
-    val valsExploreEpExploreManyQ = extractCoefficients(coefficients, ExploreEndpoints_ExploreManyQuery())
-    val valsExploreEpExploitQ = extractCoefficients(coefficients, ExploreEndpoints_ExploitQuery())
+    val valsExploitEpExploreManyQ = extractCoefficients(coefficients, ExploitEndpoints_ExploreManyQuery)
+    val valsExploitEpExploreFewQ = extractCoefficients(coefficients, ExploitEndpoints_ExploreFewQuery)
+    val valsExploitEpExploitQ = extractCoefficients(coefficients, ExploitEndpoints_ExploitQuery)
+    val valsExploreEpExploreFewQ = extractCoefficients(coefficients, ExploreEndpoints_ExploreFewQuery)
+    val valsExploreEpExploreManyQ = extractCoefficients(coefficients, ExploreEndpoints_ExploreManyQuery)
+    val valsExploreEpExploitQ = extractCoefficients(coefficients, ExploreEndpoints_ExploitQuery)
 
     val coefficientsMap = Seq[Option[(Action, mutable.HashMap[String, Double])]](valsExploitEpExploreManyQ, valsExploitEpExploreFewQ, valsExploitEpExploitQ, valsExploreEpExploreFewQ, valsExploreEpExploreManyQ, valsExploreEpExploitQ).collect{
       case Some((name, coeff)) => name -> coeff

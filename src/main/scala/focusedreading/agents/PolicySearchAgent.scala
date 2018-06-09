@@ -412,11 +412,11 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   private def queryActionToStrategy(action: Action, a: Participant, b: Participant) = {
 
     action match {
-      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploreEndpoints_ExploitQuery()).contains(ac) =>
+      case ac if Seq(ExploitEndpoints_ExploitQuery, ExploreEndpoints_ExploitQuery).contains(ac) =>
         Query(Conjunction, fewPapers, a, Some(b))
-      case ac if Seq(ExploitEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreManyQuery()).contains(ac) =>
+      case ac if Seq(ExploitEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreManyQuery).contains(ac) =>
         Query(Disjunction, manyPapers, a, Some(b))
-      case ac if Seq(ExploitEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) =>
+      case ac if Seq(ExploitEndpoints_ExploreFewQuery, ExploreEndpoints_ExploreFewQuery).contains(ac) =>
         Query(Disjunction, manyPapers, a, Some(b))
       case _ =>
         throw new RuntimeException("Got an invalid action type for the query stage")
@@ -429,8 +429,8 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
 
     val selectedChooser = action match {
-      case ac if Seq(ExploitEndpoints_ExploitQuery(), ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery()).contains(ac) => exploitChooser
-      case ac if Seq(ExploreEndpoints_ExploitQuery(), ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery()).contains(ac) => exploreChooser
+      case ac if Seq(ExploitEndpoints_ExploitQuery, ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery).contains(ac) => exploitChooser
+      case ac if Seq(ExploreEndpoints_ExploitQuery, ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery).contains(ac) => exploreChooser
       case _ => throw new RuntimeException("Invalid action for the ENDPOINTS stage")
     }
 
@@ -469,8 +469,8 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   */
 object PolicySearchAgent {
   // All the possible actions
-  val usedActions = Seq(ExploitEndpoints_ExploreManyQuery(), ExploitEndpoints_ExploreFewQuery(), ExploitEndpoints_ExploitQuery(),
-    ExploreEndpoints_ExploreManyQuery(), ExploreEndpoints_ExploreFewQuery(), ExploreEndpoints_ExploitQuery())
+  val usedActions = Seq(ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploitQuery,
+    ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
 
   val config = ConfigFactory.load()
   val elements = config.getConfig("MDP").getConfig("actions").getStringList("active").toSet

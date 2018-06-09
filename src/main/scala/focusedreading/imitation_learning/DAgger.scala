@@ -66,10 +66,10 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
   private val experience = new mutable.ListBuffer[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]
   private val sampler = new Random(0)
   private val possibleActions = Seq(
-    ExploreEndpoints_ExploitQuery(),
-    ExploreEndpoints_ExploreManyQuery(),
-    ExploitEndpoints_ExploitQuery(),
-    ExploitEndpoints_ExploreManyQuery()
+    ExploreEndpoints_ExploitQuery,
+    ExploreEndpoints_ExploreManyQuery,
+    ExploitEndpoints_ExploitQuery,
+    ExploitEndpoints_ExploreManyQuery
   )
 
   private val optimalSequencesCache:SolutionsCache = new RedisCache()//new MapCache()
@@ -96,7 +96,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
             optimalSequencesCache.cache(state, sequence)
             choice
             // TODO add a random choice with a controlled seed here
-          case None => ExploreEndpoints_ExploitQuery()
+          case None => ExploreEndpoints_ExploitQuery
         }
     }
   }
@@ -190,10 +190,10 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     val numSamples = experience.size
     val numClasses = frequencies.keySet.size.toDouble
 
-    val weights = Seq(ExploitEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
-      ExploreEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
-      ExploitEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction],
-      ExploreEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction]).map{
+    val weights = Seq(ExploitEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
+      ExploreEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
+      ExploitEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction],
+      ExploreEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction]).map{
       k =>
         frequencies.get(k) match {
           case Some(num)=> k -> numSamples / (numClasses*num)

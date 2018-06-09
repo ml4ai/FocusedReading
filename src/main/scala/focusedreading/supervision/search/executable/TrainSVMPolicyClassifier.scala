@@ -70,10 +70,10 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   // Train it
   val x = dataset.labels map dataset.labelLexicon.get groupBy identity mapValues (_.size)
   val indices = mkTrainIndices(dataset.size, None)
-  val weights = Seq(ExploitEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
-    ExploreEndpoints_ExploreManyQuery().asInstanceOf[FocusedReadingAction],
-    ExploitEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction],
-    ExploreEndpoints_ExploitQuery().asInstanceOf[FocusedReadingAction]).zip(supervisionConfig.getDoubleList("classWeights")).map{case(k, v) => k -> v.toDouble}.toMap
+  val weights = Seq(ExploitEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
+    ExploreEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
+    ExploitEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction],
+    ExploreEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction]).zip(supervisionConfig.getDoubleList("classWeights")).map{case(k, v) => k -> v.toDouble}.toMap
   classifier.train(dataset, indices, Some(weights))
 
   // Test it on the held out data
