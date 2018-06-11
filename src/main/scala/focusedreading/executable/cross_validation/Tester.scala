@@ -1,7 +1,8 @@
 package focusedreading.executable.cross_validation
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.agents.{PolicySearchAgent, SearchAgent}
+import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile, SearchAgent}
 import focusedreading.{Connection, Participant}
 import org.sarsamora.policies.EpGreedyPolicy
 
@@ -9,6 +10,10 @@ import scala.collection.mutable
 
 class Tester(dataSet:Iterable[Tuple2[String, String]], policy:EpGreedyPolicy) extends LazyLogging{
 
+  val config = ConfigFactory.load()
+  val supervisionConfig = config.getConfig("expertOracle")
+  implicit val indexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {

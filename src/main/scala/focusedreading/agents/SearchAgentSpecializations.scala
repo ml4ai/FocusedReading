@@ -27,15 +27,20 @@ import scala.collection.mutable
  * Mixes traits together to implement FR search agents
  */
 
+case class LuceneIndexDir(path:String)
+case class SQLiteFile(path:String)
+
 /**
   * Uses Lucene and REACH directly to do a FR simple path search
   * @param participantA Origin of the search
   * @param participantB Destination of the search
   */
-class LuceneReachSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
+class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)(implicit indexPath:LuceneIndexDir) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
   with LuceneIRStrategy
   with REACHIEStrategy {
+
+  val indexDir:String = indexPath.path
 
   // Graph4Scala model
   ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
@@ -54,11 +59,13 @@ class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)
   * @param participantA Origin of the search
   * @param participantB Destination of the search
   */
-class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant) extends SimplePathAgent(participantA, participantB)
+class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)(implicit indexPath:LuceneIndexDir, sqliteFile:SQLiteFile) extends SimplePathAgent(participantA, participantB)
   with MostConnectedParticipantsStrategy
   with LuceneIRStrategy
   with SQLIteIEStrategy {
 
+  override val indexDir:String = indexPath.path
+  override val sqlitePath: String = sqliteFile.path
 
   ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
 

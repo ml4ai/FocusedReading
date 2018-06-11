@@ -19,7 +19,7 @@ object CreateExpertOracle extends App{
 
   val conf = ConfigFactory.load()
 
-  val dbPath = conf.getConfig("informationExtraction").getString("sqlitePath")//Users/enrique/Research/focused_reading/sqlite/new_interactions.sqlite"
+  val dbPath = conf.getConfig("informationExtraction").getString("sqlitePath")
 
   println(s"Finding paths for training data exper from: $dbPath")
 

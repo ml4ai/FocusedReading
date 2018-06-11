@@ -3,7 +3,7 @@ package focusedreading.executable
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.Participant
-import focusedreading.agents.PolicySearchAgent
+import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.imitation_learning.DAgger
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
@@ -25,6 +25,9 @@ object TrainingImitation extends App with LazyLogging {
   type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]
 
   val config = ConfigFactory.load()
+
+  implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
   val trainingConfig = config.getConfig("imitation")
   val mdpConfig = config.getConfig("MDP")

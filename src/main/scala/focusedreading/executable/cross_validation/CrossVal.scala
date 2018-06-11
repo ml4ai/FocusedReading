@@ -2,7 +2,9 @@ package focusedreading.executable.cross_validation
 
 import java.io.{File, FileOutputStream, OutputStreamWriter}
 
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import focusedreading.agents.{LuceneIndexDir, SQLiteFile}
 
 import scala.collection.mutable
 
@@ -10,6 +12,10 @@ import scala.collection.mutable
   * Created by enrique on 07/08/17.
   */
 object CrossVal extends App with LazyLogging {
+
+  val config = ConfigFactory.load()
+  val indexPath = config.getConfig("lucene").getString("annotationsIndex")
+  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
 
   val dirPath = args(0)
 
@@ -27,7 +33,7 @@ object CrossVal extends App with LazyLogging {
 
   for((trainData, testData) <- slices){
     // Do training
-    val trainer = new Trainer(trainData.toIterator)
+    val trainer = new Trainer(trainData.toIterator, LuceneIndexDir(indexPath), SQLiteFile(sqlitePath))
     val learntPolicy = trainer.run()
     // Do testing
     val tester = new Tester(testData map (_._1), learntPolicy)

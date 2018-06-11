@@ -13,8 +13,9 @@ trait IRStrategy {
 
 trait LuceneIRStrategy extends IRStrategy{
   val maxHits = 100
+  val indexDir:String
 
-  val luceneQuerier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
+  val luceneQuerier = new LuceneQueries(indexDir)
 
   override def informationRetrival(query: Query) = {
     val pmcids:Iterable[(String, Float)] = query.strategy match {
@@ -41,7 +42,9 @@ trait LuceneIRStrategy extends IRStrategy{
 
 trait SQLIRStrategy extends IRStrategy{
 
-  val daIR = new SQLiteQueries("/Users/enrique/Research/focused_reading/sqlite/lucene_queries.sqlite")
+  val dbPath:String
+
+  val daIR = new SQLiteQueries(dbPath)
 
   override def informationRetrival(query: Query) = {
     val pmcids: Iterable[String] = query.strategy match {
@@ -67,7 +70,8 @@ trait SQLIRStrategy extends IRStrategy{
 
 trait RedisIRStrategy extends IRStrategy{
 
-  val redisLuceneQuerier = new RedisLuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
+  val indexDir:String
+  val redisLuceneQuerier = new RedisLuceneQueries(indexDir)
 
   override def informationRetrival(query: Query) = {
 

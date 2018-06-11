@@ -1,16 +1,16 @@
 package focusedreading.executable.cross_validation
 
-import focusedreading.agents.PolicySearchAgent
+import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
-import focusedreading.reinforcement_learning.states.{FocusedReadingState}
+import focusedreading.reinforcement_learning.states.FocusedReadingState
 import org.sarsamora.actions.Action
 import org.sarsamora.environment.Environment
 import org.sarsamora.policies.EpGreedyPolicy
 import org.sarsamora.policy_iteration.td.value_functions.LinearApproximationActionValues
 import org.sarsamora.policy_iteration.td.SARSA
 
-class Trainer(dataSet:Iterator[Tuple2[(String, String), Array[String]]]) {
+class Trainer(dataSet:Iterator[Tuple2[(String, String), Array[String]]], indexPath:LuceneIndexDir, sqliteFile:SQLiteFile) {
 
 
   val focusedReadingFabric = () => {
@@ -21,7 +21,7 @@ class Trainer(dataSet:Iterator[Tuple2[(String, String), Array[String]]]) {
       val referencePath = sequence map (p=> Participant("", p))
 
       // TODO: Integrate the normalization parameters
-      Some(new SimplePathEnvironment(participantA, participantB, referencePath, normalizationParameters = None))
+      Some(SimplePathEnvironment(participantA, participantB, referencePath, normalizationParameters = None)(indexPath, sqliteFile))
     }
     else
       None

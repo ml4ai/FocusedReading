@@ -9,9 +9,8 @@ import com.typesafe.config.{Config, ConfigFactory}
   */
 trait SQLIteIEStrategy extends IEStrategy{
 
-  val config: Config = ConfigFactory.load()
 
-  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val sqlitePath:String
   val daIE = new SQLiteQueries(sqlitePath)
 
   override def informationExtraction(pmcids: Iterable[String]):Iterable[Connection] = {

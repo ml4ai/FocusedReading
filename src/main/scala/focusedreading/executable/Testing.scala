@@ -4,7 +4,7 @@ import java.io.{BufferedWriter, FileOutputStream, FileWriter, _}
 import java.nio.file.Paths
 
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.agents.{PolicySearchAgent, RedisSQLiteSearchAgent, SearchAgent}
+import focusedreading.agents._
 import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.tracing.AgentRunTrace
@@ -26,6 +26,8 @@ object Testing extends App with LazyLogging{
   val testingConfig = config.getConfig("testing")
   val outputConfig = testingConfig.getConfig("output")
   val supervisionConfig = config.getConfig("expertOracle")
+  implicit val indexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {

@@ -8,7 +8,7 @@ import breeze.plot.{Figure, plot}
 import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.agents.PolicySearchAgent
+import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
@@ -34,6 +34,8 @@ object Training extends App with LazyLogging {
   val mdpConfig = config.getConfig("MDP")
 
   val inputPath = trainingConfig.getString("inputFile")
+  implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
 
   val trainingData = io.Source.fromFile(inputPath).getLines

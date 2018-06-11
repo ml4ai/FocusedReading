@@ -3,7 +3,7 @@ package focusedreading.supervision.search.executable
 import java.io.{FileOutputStream, ObjectOutputStream}
 
 import com.typesafe.config.{Config, ConfigFactory}
-import focusedreading.agents.PolicySearchAgent
+import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.ir.LuceneQueries
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.states.FocusedReadingState
@@ -20,6 +20,10 @@ import scala.io.Source
 
 object DoSearch extends App{
 
+  val config = ConfigFactory.load()
+  private implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  private implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+
   // State, action, Cost, estimated remaining cost, Actual Remaining cost
   case class Result(state:FocusedReadingState, action:FocusedReadingAction, cost:Double, estimatedRemaining:Int, actualRemaining:Int)
 
@@ -35,7 +39,6 @@ object DoSearch extends App{
 
   // Interning strings
   println("Interning strings ...")
-  val config: Config = ConfigFactory.load()
   val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
   val da = new SQLiteQueries(sqlitePath)
 

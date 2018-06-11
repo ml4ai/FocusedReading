@@ -28,14 +28,14 @@ import scala.collection.mutable
 class PolicySearchAgent(val participantA:Participant, val participantB:Participant,
                         val policy:Option[Policy] = None,
                         val referencePath:Option[Seq[Participant]] = None,
-                        val normalizationParameters:Option[NormalizationParameters] = None) extends SimplePathAgent(participantA, participantB) with Serializable
+                        val normalizationParameters:Option[NormalizationParameters] = None)(implicit indexPath:LuceneIndexDir, sqliteFile: SQLiteFile) extends SimplePathAgent(participantA, participantB) with Serializable
   with PolicyParticipantsStrategy
   with RedisIRStrategy
   with SQLIteIEStrategy {
 
 
   override def clone():PolicySearchAgent = {
-    val clone = new PolicySearchAgent(participantA, participantB, policy, referencePath, normalizationParameters)
+    val clone = new PolicySearchAgent(participantA, participantB, policy, referencePath, normalizationParameters)(this.indexPath, this.sqliteFile)
 
     clone.model = this.model.copy()
     clone.actionCounters ++= this.actionCounters
@@ -63,6 +63,8 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone
   }
 
+  override val indexDir: String = indexPath.path
+  override val sqlitePath: String = sqliteFile.path
 
   // Fields
   val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap

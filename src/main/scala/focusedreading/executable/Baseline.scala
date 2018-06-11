@@ -25,6 +25,10 @@ object Baseline extends App with LazyLogging{
     // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
     val config = ConfigFactory.load()
 
+    // Lucene index dir
+    implicit val indexPath: LuceneIndexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+    implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+
 
     def getParticipants(path:List[Connection]):List[String] = {
       path match {

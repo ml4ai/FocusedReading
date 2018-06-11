@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
   */
 
 
-class LuceneDataAccess(val path:String) extends LazyLogging with LuceneIRStrategy{
+class LuceneDataAccess(sqlitePath:String, val indexDir:String) extends LazyLogging with LuceneIRStrategy{
 
   // Load the JDBC driver
   Class.forName("org.sqlite.JDBC")
@@ -43,11 +43,11 @@ class LuceneDataAccess(val path:String) extends LazyLogging with LuceneIRStrateg
   ////////////////
 
 
-  private def getConnection = DriverManager.getConnection(s"jdbc:sqlite:$path");
+  private def getConnection = DriverManager.getConnection(s"jdbc:sqlite:$sqlitePath");
 
   def createDatabase(): Unit ={
 
-    logger.info(s"Creating database in $path")
+    logger.info(s"Creating database in $sqlitePath")
     val connection:Connection = getConnection
 
     // Create all the tables

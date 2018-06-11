@@ -1,10 +1,13 @@
 package focusedreading.supervision.search
 
-import scala.io
+import com.typesafe.config.ConfigFactory
 import focusedreading.Participant
 import focusedreading.ir.LuceneQueries
 
 object PairVerifyer extends App {
+
+  val config = ConfigFactory.load()
+
   val pairs = io.Source.fromFile("pairs_training").getLines().map{
     s =>
       val tokens = s.split(",")
@@ -13,7 +16,8 @@ object PairVerifyer extends App {
 
   val participants = pairs.flatMap{case (a, b) => Seq(a, b)}.toSet
 
-  val querier = new LuceneQueries("/Users/enrique/Research/focused_reading/pmc_oa_lucene")
+  val indexPath = config.getConfig("lucene").getString("annotationsIndex")
+  val querier = new LuceneQueries(indexPath)
 
   val hasSynonyms = participants.map(p => p -> !querier.resolveParticipant(p).isEmpty).toMap
 
