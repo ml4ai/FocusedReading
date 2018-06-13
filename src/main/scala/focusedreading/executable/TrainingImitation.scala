@@ -33,7 +33,7 @@ object TrainingImitation extends App with LazyLogging {
   val mdpConfig = config.getConfig("MDP")
   val supervisionConfig = config.getConfig("expertOracle")
 
-  val inputPath = supervisionConfig.getString("inputFile")
+  val inputPath = trainingConfig.getString("inputFile")
 
   val trainingPaths = Source.fromFile(inputPath).getLines().toList.map(_.split("\t"))
 

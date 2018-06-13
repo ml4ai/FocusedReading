@@ -12,6 +12,7 @@ import java.util.Random
 
 import collection.JavaConversions._
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.LazyLogging
 import focusedreading.ir.LuceneQueries
 import focusedreading.{Connection, Participant}
 import focusedreading.reinforcement_learning.actions
@@ -24,7 +25,7 @@ import org.clulab.learning.RVFDataset
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) {
+class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) extends LazyLogging{
 
   // Load the configuration parameters
   private val config = ConfigFactory.load()
@@ -84,19 +85,25 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
     // Look up the cache
     optimalSequencesCache get state match {
-      case Some(choice) => choice.head.action
+      case Some(choice) =>
+        logger.info(s"Cache Hit")
+        choice.head.action
       case None =>
+        logger.info(s"Cache Miss")
         // Doesn't contain it, hence running UCS to find it
         val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
         searcher.solve() match {
           case Some(solution) =>
-            //TODO Add the solution to the cache
+
             val sequence: Seq[DoSearch.Result] = DoSearch.actionSequence(solution, searcher)
             val choice = sequence.head.action
             optimalSequencesCache.cache(state, sequence)
             choice
             // TODO add a random choice with a controlled seed here
-          case None => ExploreEndpoints_ExploitQuery
+          case None =>
+            val sequence = Seq(DoSearch.Result(state, ExploreEndpoints_ExploitQuery, 200, 0, 0))
+            optimalSequencesCache.cache(state, sequence)
+            ExploreEndpoints_ExploitQuery
         }
     }
   }
@@ -113,9 +120,11 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
       var oracleTimes = 0
       var policyTimes = 0
 
-      println(s"DAGGER info: Epoch $epoch\tAlpha: $alpha\tData set size: ${experience.size}")
+      logger.info(s"Starting Epoch $epoch of $epochs\tAlpha: $alpha\tData set size: ${experience.size}")
 
-      for(_ <- 0 to epochSize){
+      for(ix <- 0 until epochSize){
+
+        logger.info(s"Epoch $epoch of $epochs\tIteration: $ix of $epochSize")
 
         episodeFabric match {
           case Some(environment) =>

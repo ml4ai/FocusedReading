@@ -242,7 +242,7 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
       if(persist) {
         unchangedIterations += 1
 
-        logger.info(s"The model didn't change $unchangedIterations times")
+        //logger.info(s"The model didn't change $unchangedIterations times")
       }
       if(unchangedIterations >= maxUnchangedIterations)
         true
@@ -273,8 +273,8 @@ abstract class SimplePathAgent(participantA:Participant, participantB:Participan
     this.edgesCount = this.model.numEdges
 
 
-    logger.info(s"Model participants; Before: $prevNodesCount\tAfter: $nodesCount")
-    logger.info(s"Model connections; Before: $prevEdgesCount\tAfter: $edgesCount")
+    //logger.info(s"Model participants; Before: $prevNodesCount\tAfter: $nodesCount")
+    //logger.info(s"Model connections; Before: $prevEdgesCount\tAfter: $edgesCount")
   }
 
 }
