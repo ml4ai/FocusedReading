@@ -120,11 +120,11 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
       var oracleTimes = 0
       var policyTimes = 0
 
-      logger.info(s"Starting Epoch $epoch of $epochs\tAlpha: $alpha\tData set size: ${experience.size}")
+      logger.info(s"Starting Epoch ${epoch+1} of $epochs\tAlpha: $alpha\tData set size: ${experience.size}")
 
       for(ix <- 0 until epochSize){
 
-        logger.info(s"Epoch $epoch of $epochs\tIteration: $ix of $epochSize")
+        logger.info(s"Epoch $epoch of $epochs\tIteration: ${ix+1} of $epochSize")
 
         episodeFabric match {
           case Some(environment) =>
