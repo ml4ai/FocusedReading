@@ -124,7 +124,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
       for(ix <- 0 until epochSize){
 
-        logger.info(s"Epoch $epoch of $epochs\tIteration: ${ix+1} of $epochSize")
+        logger.info(s"Epoch ${epoch+1} of $epochs\tIteration: ${ix+1} of $epochSize")
 
         episodeFabric match {
           case Some(environment) =>
