@@ -80,7 +80,7 @@ object TrainingImitation extends App with LazyLogging {
       val episodeData = dataSet.next
       val sequence  = episodeData
 
-      Some(SimplePathEnvironment(Participant("", sequence.head), Participant("", sequence.last), sequence map {p => Participant("", p)}, normalizationParameters))
+      Some(SimplePathEnvironment(Participant.get("", sequence.head.intern()), Participant.get("", sequence.last.intern()), sequence map {p => Participant.get("", p.intern)}, normalizationParameters))
     }
     else
       None

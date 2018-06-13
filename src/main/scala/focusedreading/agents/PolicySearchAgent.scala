@@ -57,14 +57,11 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone.chosenEndpointsLog = this.chosenEndpointsLog
     clone.colors = this.colors
 
-
-
-
     clone
   }
 
-  override val indexDir: String = indexPath.path
-  override val sqlitePath: String = sqliteFile.path
+  override def indexDir: String = indexPath.path
+  override def sqlitePath: String = sqliteFile.path
 
   // Fields
   val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
@@ -73,10 +70,12 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   this.introductions += participantA -> 0
   this.introductions += participantB -> 0
 
-  private val configuration = ConfigFactory.load()
-  private val useRewardShaping = configuration.getConfig("MDP").getBoolean("rewardShaping")
-  private val fewPapers = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
-  private val manyPapers = configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
+  private val useRewardShaping = PolicySearchAgent.configuration.getConfig("MDP").getBoolean("rewardShaping")
+  private val fewPapers = PolicySearchAgent.configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
+  private val manyPapers = PolicySearchAgent.configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
+
+  var shapingCount:Int = 0
+  var rewardEvaluated:Int = 0
   ////////////
 
   override def choseEndPoints(source: Participant, destination: Participant,
@@ -119,26 +118,27 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     super.reconcile(connections)
   }
 
-  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel): Option[Seq[Seq[Connection]]] = {
-    val result = super.successStopCondition(source, destination, model)
-
-    result match {
-      case Some(paths) => {
-        val newPaths = paths.map {
-          path =>
-            path.map {
-              connection =>
-                //val references = this.references(connection.controller, connection.controlled, connection.sign)
-                Connection.get(connection.controller, connection.controlled, connection.sign/*, connection.evidence, references*/)
-            }
-
-        }
-
-        Some(newPaths)
-      }
-      case None => None
-    }
-  }
+//  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel): Option[Seq[Seq[Connection]]] = {
+//    val result = super.successStopCondition(source, destination, model)
+//
+//    result match {
+//      case Some(paths) => {
+//        val newPaths = paths.map {
+//          path =>
+//            path.map {
+//              connection =>
+//                //val references = this.references(connection.controller, connection.controlled, connection.sign)
+//                // TODO: Possible leak here
+//                Connection.get(connection.controller, connection.controlled, connection.sign/*, connection.evidence, references*/)
+//            }
+//
+//        }
+//
+//        Some(newPaths)
+//      }
+//      case None => None
+//    }
+//  }
 
 
   override def choseQuery(a: Participant,
@@ -263,9 +263,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   }
 
 
-  var shapingCount:Int = 0
-  var rewardEvaluated:Int = 0
-
   private def executePolicyQueryStage(action:Action, persist:Boolean):Double = {
 
     // Compute the reward shaping potential in the current state
@@ -282,9 +279,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
     val paperIds = this.informationRetrival(query)
 
-    this.papersRead ++= paperIds map (_._1)
+    this.papersRead ++= paperIds map (_._1.intern())
 
-    val findings = this.informationExtraction(paperIds map (p => p._1))
+    val findings = this.informationExtraction(paperIds map (p => p._1.intern()))
 
     // Count the introductions
     for(f <- findings){
@@ -470,12 +467,13 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   * Companion object.
   */
 object PolicySearchAgent {
+  val configuration = ConfigFactory.load()
   // All the possible actions
   val usedActions = Seq(ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploitQuery,
     ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
 
-  val config = ConfigFactory.load()
-  val elements = config.getConfig("MDP").getConfig("actions").getStringList("active").toSet
+  //val config = ConfigFactory.load()
+  val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
   def getActiveActions: Set[Action] = usedActions.toSet
 }

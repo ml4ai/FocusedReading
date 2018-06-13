@@ -10,14 +10,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 trait SQLIteIEStrategy extends IEStrategy{
 
 
-  val sqlitePath:String
+  def sqlitePath:String
   val daIE = new SQLiteQueries(sqlitePath)
 
   override def informationExtraction(pmcids: Iterable[String]):Iterable[Connection] = {
 
     // Query the DB
     //val info = pmcids.take(100).grouped(40) flatMap daIE.ieQuery
-    val info = pmcids.grouped(40) flatMap daIE.ieQuery
+    val info = pmcids.grouped(40) flatMap daIE.ieQuery // TODO: parameterize this
 
     // Group the info by interaction
     val groups = info.toSeq.groupBy(i => (i._1, i._2, i._3))

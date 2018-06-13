@@ -52,8 +52,8 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
   val allConnections = da.getAllInteractions
   allConnections foreach {
     case (controller, controlled, direction) =>
-      val pa = Participant.get("", controller)
-      val pb = Participant.get("", controlled)
+      val pa = Participant.get("", controller.intern)
+      val pb = Participant.get("", controlled.intern)
       Connection.get(pa, pb, direction)
   }
 

@@ -42,7 +42,7 @@ trait LuceneIRStrategy extends IRStrategy{
 
 trait SQLIRStrategy extends IRStrategy{
 
-  val dbPath:String
+  def dbPath:String
 
   val daIR = new SQLiteQueries(dbPath)
 
@@ -70,7 +70,8 @@ trait SQLIRStrategy extends IRStrategy{
 
 trait RedisIRStrategy extends IRStrategy{
 
-  val indexDir:String
+  def indexDir:String
+
   val redisLuceneQuerier = new RedisLuceneQueries(indexDir)
 
   override def informationRetrival(query: Query) = {
