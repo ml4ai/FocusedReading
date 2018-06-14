@@ -10,6 +10,7 @@ import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
 import org.clulab.utils.Serializer
+import focusedreading.implicits._
 
 class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]) extends Policy {
 
@@ -26,7 +27,7 @@ class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]
 
   override def selectAction(s: State, possibleActions: Seq[Action]): Action = {
     // Create a datum out of the state
-    val features = SVMPolicyClassifier.filterFeatures(s.asInstanceOf[FocusedReadingState].toFeatures(None), toBeExcluded)
+    val features = SVMPolicyClassifier.filterFeatures(s.toFeatures, toBeExcluded)
     // Ugly to add a dummy label, but hey
     val datum = SVMPolicyClassifier.toDatum((features, ExploitEndpoints_ExploitQuery))
     // Classify it

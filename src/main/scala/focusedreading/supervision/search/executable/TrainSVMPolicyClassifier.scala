@@ -70,6 +70,7 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   // Train it
   val x = dataset.labels map dataset.labelLexicon.get groupBy identity mapValues (_.size)
   val indices = mkTrainIndices(dataset.size, None)
+  // TODO: Make this compute automatically
   val weights = Seq(ExploitEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
     ExploreEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
     ExploitEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction],

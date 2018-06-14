@@ -1,5 +1,6 @@
 package focusedreading.supervision.search
 
+import  focusedreading.implicits._
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 
 import scala.collection.mutable
@@ -41,13 +42,13 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
         val agent = state.agent
 
         // Create a node for each possible action at this point
-        val children = agent.possibleActions().par map {
+        val children = agent.possibleActions.par map {
           action =>
             val newAgent = agent.clone()
             newAgent.executePolicy(action)
             val newState = new FRSearchState(newAgent, state)
             newState.updateState()
-            val childNode = createNode(newState, Some(node), Some(action.asInstanceOf[FocusedReadingAction]))
+            val childNode = createNode(newState, Some(node), Some(action))
             childNode
         }
 

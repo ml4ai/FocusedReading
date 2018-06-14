@@ -3,6 +3,7 @@ package focusedreading.supervision.search.executable
 import java.io.{FileOutputStream, ObjectOutputStream}
 
 import com.typesafe.config.ConfigFactory
+import focusedreading.implicits._
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.ir.LuceneQueries
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
@@ -65,7 +66,7 @@ object DoSearch extends App{
     if(node.parent.isDefined){
       if(node.action.isDefined){
         val state = node.state
-        val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
+        val frState:FocusedReadingState = state.agent.observeState
         SearchResult(
           frState,
           node.action.get,

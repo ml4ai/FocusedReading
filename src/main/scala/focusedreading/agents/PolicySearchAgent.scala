@@ -461,14 +461,14 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   * Companion object.
   */
 object PolicySearchAgent {
-  val configuration = ConfigFactory.load()
+  private val configuration = ConfigFactory.load()
   // All the possible actions
   val usedActions = Seq(ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploitQuery,
     ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
 
   //val config = ConfigFactory.load()
   // TODO: make this code respect the configuration choice
-  val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
+  private val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
   def getActiveActions: Seq[FocusedReadingAction] = usedActions
 }

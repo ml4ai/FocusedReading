@@ -112,7 +112,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     var previousPolicy:Option[LibSVMClassifier[FocusedReadingAction, String]] = None
 
 
-    for(epoch <- 0 to epochs){
+    for(epoch <- 0 until epochs){
       val alpha = alphas.next()
       var oracleTimes = 0
       var policyTimes = 0

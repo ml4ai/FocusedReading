@@ -8,6 +8,7 @@ import focusedreading.reinforcement_learning.states.FocusedReadingState
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
+import focusedreading.implicits._
 
 import scala.collection.mutable
 
@@ -50,7 +51,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
     if (!containsB)
       introductions += b -> getIterationNum
 
-    val state = this.observeState.asInstanceOf[FocusedReadingState]
+    val state:FocusedReadingState = this.observeState
 
     // Undo the changes
     //queryLog.remove(queryLog.size - 1)
