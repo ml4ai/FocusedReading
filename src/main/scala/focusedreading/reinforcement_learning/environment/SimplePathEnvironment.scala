@@ -22,7 +22,7 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 
   val agent = new PolicySearchAgent(participantA, participantB, None, Some(referencePath), normalizationParameters)
 
-  override def possibleActions(): Seq[Action] = agent.possibleActions()
+  override def possibleActions(): Seq[Action] = agent.possibleActions
 
   override def execute(action: Action, persist: Boolean): Double = agent.executePolicy(action, persist)
 
