@@ -70,6 +70,13 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
     import focusedreading.implicits._
 
+    def cacheSequence(state: FocusedReadingState, results: Seq[SearchResult]){
+      if(results.nonEmpty) {
+        optimalSequencesCache.cache(state, results)
+        cacheSequence(results.head.state, results.tail)
+      }
+    }
+
     val agent = environment.agent
     val state:FocusedReadingState = agent.observeState
 
@@ -91,7 +98,8 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
           case Some(solution) =>
             val sequence: Seq[SearchResult] = searcher.actionSequence(solution)
             val choice = sequence.head.action
-            optimalSequencesCache.cache(state, sequence)
+            // Cache all the nested subsequences from the current answer
+            cacheSequence(state, sequence)
             choice
           case None =>
             val choice = agent.possibleActions.randomElement
