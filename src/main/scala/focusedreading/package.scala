@@ -15,7 +15,7 @@ package object focusedreading {
   /**
     * Thread-safe access to the random instance
     */
-  private def random:Random = synchronized {
+  def random:Random = synchronized {
     _random
   }
 
@@ -47,7 +47,7 @@ package object focusedreading {
         * Fetches an element with a random index <b>with</b> replacement
         * @return A random member of the sequence
         */
-      def randomElement:A = s(random.nextInt() % s.length)
+      def randomElement:A = s(random.nextInt(s.length))
     }
   }
 

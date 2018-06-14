@@ -144,7 +144,7 @@ object Training extends App with LazyLogging {
   //////////////////////////
 
   val policyIteration = new QLearning(focusedReadingFabric, numEpisodes, burnInEpisodes, alphas, decay, lambda)
-  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
+  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions.toSet
   val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 
   // Decaying epsilon

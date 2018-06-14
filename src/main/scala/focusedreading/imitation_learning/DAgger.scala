@@ -4,6 +4,7 @@ import java.util.Random
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import focusedreading.agents.PolicySearchAgent
 import focusedreading.ir.LuceneQueries
 import focusedreading.policies.ClassifierPolicy
 import focusedreading.reinforcement_learning.actions._
@@ -18,6 +19,7 @@ import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
 import org.sarsamora.policies.Policy
 import org.sarsamora.policy_iteration.EpisodeObserver
+import focusedreading.implicits.{action2frAction, RandomizableSeq}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -32,22 +34,22 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
   // Interning strings
   println("Interning strings ...")
-  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val sqlitePath: String = config.getConfig("informationExtraction").getString("sqlitePath")
   val da = new SQLiteQueries(sqlitePath)
 
   println("Interning PMCIDs...")
-  val allPMCIDs = da.getAllPMCIDs
+  val allPMCIDs: Iterable[String] = da.getAllPMCIDs
   allPMCIDs foreach (_.intern)
 
   println("Interning participant strings...")
-  val allParticipants = da.getAllParticipants
+  val allParticipants: Iterable[String] = da.getAllParticipants
   allParticipants foreach (_.intern)
 
   println("Interning participant instances...")
   allParticipants foreach (p => Participant.get("", p.intern))
 
   println("Interning connection instances...")
-  val allConnections = da.getAllInteractions
+  val allConnections: Iterable[(String, String, Boolean)] = da.getAllInteractions
   allConnections foreach {
     case (controller, controlled, direction) =>
       val pa = Participant.get("", controller.intern)
@@ -60,13 +62,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
   // (state, predicted action, real action)
   private val experience = new mutable.ListBuffer[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]
-  private val sampler = new Random(0)
-  private val possibleActions = Seq(
-    ExploreEndpoints_ExploitQuery,
-    ExploreEndpoints_ExploreManyQuery,
-    ExploitEndpoints_ExploitQuery,
-    ExploitEndpoints_ExploreManyQuery
-  )
+
 
   private val optimalSequencesCache:SolutionsCache = new RedisCache()//new MapCache()
 
@@ -75,7 +71,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     import focusedreading.implicits._
 
     val agent = environment.agent
-    val state = agent.observeState.asInstanceOf[FocusedReadingState]
+    val state:FocusedReadingState = agent.observeState
 
     val reference:Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map{
       r =>
@@ -136,7 +132,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
               val oracleChoice = askExpert(environment)
 
-              val r = sampler.nextDouble()
+              val r = focusedreading.random.nextDouble()
               val selectedAction = r match {
                 case x:Double if x <= alpha =>
                   // Sample from the expert
@@ -171,15 +167,16 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     new ClassifierPolicy(previousPolicy.get)
   }
 
-  def sampleFromLearned(state:FocusedReadingState, previousPolicy:Option[LibSVMClassifier[FocusedReadingAction, String]]):FocusedReadingAction = previousPolicy match {
-    case None =>
-      val ix = sampler.nextInt(6)
-      possibleActions(ix)
-    case Some(classifier) =>
-      val features = SVMPolicyClassifier.filterFeatures(state.toFeatures, toBeIncluded)
-      val datum = SVMPolicyClassifier.toDatum(features, possibleActions(0))
-      classifier.classOf(datum)
-  }
+  def sampleFromLearned(state:FocusedReadingState,
+                        previousPolicy:Option[LibSVMClassifier[FocusedReadingAction, String]]):FocusedReadingAction =
+    previousPolicy match {
+      case None =>
+        PolicySearchAgent.getActiveActions.randomElement
+      case Some(classifier) =>
+        val features = SVMPolicyClassifier.filterFeatures(state.toFeatures, toBeIncluded)
+        val datum = SVMPolicyClassifier.toDatum(features, PolicySearchAgent.getActiveActions(0))
+        classifier.classOf(datum)
+    }
 
 
   def trainClassifier(experience: Iterable[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]):LibSVMClassifier[FocusedReadingAction, String] = {
@@ -200,10 +197,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
     val numSamples = experience.size
     val numClasses = frequencies.keySet.size.toDouble
 
-    val weights = Seq(ExploitEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
-      ExploreEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
-      ExploitEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction],
-      ExploreEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction]).map{
+    val weights = PolicySearchAgent.getActiveActions.map{
       k =>
         frequencies.get(k) match {
           case Some(num)=> k -> numSamples / (numClasses*num)

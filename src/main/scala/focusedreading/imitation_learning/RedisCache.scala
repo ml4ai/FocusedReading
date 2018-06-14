@@ -30,8 +30,8 @@ class RedisCache(server:String = "localhost", port:Int = 6379) extends Solutions
                     FocusedReadingState.fromJson(m("state")),
                     FocusedReadingAction(m("action")),
                     m("cost").toDouble,
-                    Some(m("estimatedRemaining").toInt),
-                    Some(m("actualRemaining").toInt)
+                    m("estimatedRemaining") match { case "-" => None; case v => Some(v.toInt)},
+                    m("actualRemaining") match { case "-" => None; case v => Some(v.toInt)}
                   )
                 case None =>
                   throw new Exception("Shouldn't fall in here. Check!!")
@@ -63,8 +63,8 @@ class RedisCache(server:String = "localhost", port:Int = 6379) extends Solutions
             "state" -> r.state.toJson,
             "action" -> r.action,
             "cost" -> r.cost,
-            "estimatedRemaining" -> r.estimatedRemaining,
-            "actualRemaining" -> r.actualRemaining
+            "estimatedRemaining" -> (r.estimatedRemaining match { case Some(c) => c; case None => "-"}),
+            "actualRemaining" -> (r.actualRemaining match { case Some(c) => c; case None => "-"})
           )
 
           val id = m.hashCode()

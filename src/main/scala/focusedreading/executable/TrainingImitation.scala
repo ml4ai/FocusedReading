@@ -26,7 +26,7 @@ object TrainingImitation extends App with LazyLogging {
 
   val config = ConfigFactory.load()
 
-  implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
+  implicit val indexPath: LuceneIndexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
   implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
   val trainingConfig = config.getConfig("imitation")
@@ -69,7 +69,6 @@ object TrainingImitation extends App with LazyLogging {
     override def observeIteration(data: IterationObservation): Unit = Unit
 
     override def episodeFinished(data: EpisodeObservation): Unit = {
-      val environment = data.environment.asInstanceOf[SimplePathEnvironment]
       episodeCounts += 1
     }
   }
@@ -95,7 +94,7 @@ object TrainingImitation extends App with LazyLogging {
 
 
   val imitator = new DAgger(imitationLearningFabric, epochs, trainingPaths.size, alphas)
-  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions
+  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions.toSet
 
 
   // Iterate the policy and it's convergence status

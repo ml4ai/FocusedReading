@@ -470,6 +470,6 @@ object PolicySearchAgent {
   // TODO: make this code respect the configuration choice
   val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
-  def getActiveActions: Set[Action] = usedActions.toSet
+  def getActiveActions: Seq[FocusedReadingAction] = usedActions
 }
 
