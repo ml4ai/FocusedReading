@@ -75,7 +75,7 @@ trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with Parti
       val query = choseQuery(a, b, this.model)
       logger.info(s"Chosen query: $query")
       // Do IR to select the documents that will be read
-      val irResult = informationRetrival(query)
+      val irResult = informationRetrieval(query)
       // Extract the PMCIDs of the IR result. The other element is the IR score of each paper
       val paperIds = irResult map (_._1)
       // Keep track of the papers read during the process

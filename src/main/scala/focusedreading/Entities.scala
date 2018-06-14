@@ -1,26 +1,7 @@
 package focusedreading
 
-import java.io.File
-
-import com.typesafe.scalalogging.LazyLogging
-import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.queryparser.classic.QueryParserBase
-import org.clulab.odin.{EventMention, Mention}
-import org.clulab.reach.PaperReader
-import org.clulab.reach.grounding.{KBResolution, ReachKBUtils}
-import org.clulab.reach.indexer.NxmlSearcher
+import org.clulab.reach.grounding.ReachKBUtils
 import org.clulab.struct.Internalizer
-//import org.clulab.reach.mentions.serialization.json.{JSONSerializer, REACHMentionSeq}
-import org.clulab.reach.mentions.{BioMention, BioTextBoundMention, CorefEventMention, CorefMention, MentionOps}
-import org.clulab.utils.Serializer
-
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import scala.collection.parallel.ForkJoinTaskSupport
-import scalax.collection.GraphPredef._
-import scalax.collection.edge.Implicits._
-import scalax.collection.edge.LDiEdge
-import scalax.collection.mutable.Graph // shortcuts
 
 /**
   * Created by enrique on 21/11/16.

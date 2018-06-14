@@ -7,7 +7,7 @@ import focusedreading.sqlite.SQLiteQueries
   * Created by enrique on 20/02/17.
   */
 trait IRStrategy {
-  def informationRetrival(query: Query):Iterable[(String, Float)]
+  def informationRetrieval(query: Query):Iterable[(String, Float)]
 }
 
 
@@ -17,7 +17,7 @@ trait LuceneIRStrategy extends IRStrategy{
 
   val luceneQuerier = new LuceneQueries(indexDir)
 
-  override def informationRetrival(query: Query) = {
+  override def informationRetrieval(query: Query) = {
     val pmcids:Iterable[(String, Float)] = query.strategy match {
       case Singleton => luceneQuerier.singletonQuery(query.A, maxHits)
       case Disjunction => luceneQuerier.binaryDisjunctionQuery2(query.A, query.B.get, maxHits)
@@ -46,7 +46,7 @@ trait SQLIRStrategy extends IRStrategy{
 
   val daIR = new SQLiteQueries(dbPath)
 
-  override def informationRetrival(query: Query) = {
+  override def informationRetrieval(query: Query) = {
     val pmcids: Iterable[String] = query.strategy match {
       case Singleton => daIR.singletonQuery(query.A)
       case Disjunction => daIR.binaryDisjunctionQuery(query.A, query.B.get)
@@ -74,7 +74,7 @@ trait RedisIRStrategy extends IRStrategy{
 
   val redisLuceneQuerier = new RedisLuceneQueries(indexDir)
 
-  override def informationRetrival(query: Query) = {
+  override def informationRetrieval(query: Query) = {
 
     val pmcids:Iterable[(String, Float)] = query.strategy match {
       case Singleton => redisLuceneQuerier.singletonQuery(query.A, query.count)

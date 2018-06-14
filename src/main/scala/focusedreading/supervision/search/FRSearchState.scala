@@ -2,16 +2,16 @@ package focusedreading.supervision.search
 
 import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
-import focusedreading.supervision.search.FRSearchState.GoldDatum
+import focusedreading.supervision.ReferencePathSegment
 import focusedreading.supervision.search.heuristics.DocumentSetIntersectionHeuristic
 
 import scala.collection.mutable
 
-case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:Int, maxIterations:Int){
+case class FRSearchState(agent:PolicySearchAgent, groundTruth:Seq[ReferencePathSegment], depth:Int, maxIterations:Int){
 
   def remainingCost: Int = {
     val remainingSteps = groundTruth.collect{
-      case (a, b, papers) if !stepsDiscovered((a, b)) => papers
+      case ReferencePathSegment(a, b, papers) if !stepsDiscovered((a, b)) => papers
     }.flatten
 
     val set = collection.immutable.TreeSet.empty[String] ++ remainingSteps
@@ -29,7 +29,7 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:I
     }
   }
 
-  private val steps = groundTruth map { case(a, b, _) => (a, b)}
+  private val steps = groundTruth map { case ReferencePathSegment(a, b, _) => (a, b)}
   val stepsDiscovered: mutable.Map[(String, String), Boolean] = new mutable.HashMap[(String, String), Boolean]() ++ (steps map { _ -> false })
 
 
@@ -59,8 +59,4 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:GoldDatum, depth:I
 
     }
   }
-}
-
-object FRSearchState {
-  type GoldDatum = Seq[(String, String, Seq[String])]
 }

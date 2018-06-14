@@ -88,7 +88,7 @@ class LuceneDataAccess(sqlitePath:String, val indexDir:String) extends LazyLoggi
     if(!rs.next()){
       // Test wether the record already exists
       // Execute the lucene query to get the results
-      val resultsTry = Try(this.informationRetrival(q))
+      val resultsTry = Try(this.informationRetrieval(q))
 
       resultsTry match {
         case Success(results) => {

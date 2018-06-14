@@ -1,29 +1,26 @@
 package focusedreading.imitation_learning
 
-import focusedreading.policies.{ClassifierPolicy, OraclePolicy}
+import java.util.Random
+
+import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
+import focusedreading.ir.LuceneQueries
+import focusedreading.policies.ClassifierPolicy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.FocusedReadingState
-import org.sarsamora.actions.Action
-import org.sarsamora.policies.Policy
-import org.sarsamora.policy_iteration.EpisodeObserver
-import org.sarsamora.states.State
-import java.util.Random
-
-import collection.JavaConversions._
-import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.LazyLogging
-import focusedreading.ir.LuceneQueries
-import focusedreading.{Connection, Participant}
-import focusedreading.reinforcement_learning.actions
 import focusedreading.sqlite.SQLiteQueries
-import focusedreading.supervision.search.{FRSearchState, LibSVMClassifier, LinearKernel, UniformCostSearch}
+import focusedreading.supervision.ReferencePathSegment
 import focusedreading.supervision.search.executable.{DoSearch, SVMPolicyClassifier}
+import focusedreading.supervision.search._
+import focusedreading.{Connection, Participant}
 import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
+import org.sarsamora.policies.Policy
+import org.sarsamora.policy_iteration.EpisodeObserver
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) extends LazyLogging{
 
@@ -61,8 +58,6 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  private implicit def state2FrState(s:State):FocusedReadingState = s.asInstanceOf[FocusedReadingState]
-
   // (state, predicted action, real action)
   private val experience = new mutable.ListBuffer[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]
   private val sampler = new Random(0)
@@ -77,11 +72,15 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
   def askExpert(environment: SimplePathEnvironment): FocusedReadingAction = {
 
+    import focusedreading.implicits._
+
     val agent = environment.agent
     val state = agent.observeState.asInstanceOf[FocusedReadingState]
 
-    import FRSearchState.GoldDatum
-    val reference:GoldDatum = environment.referencePath.sliding(2).map(r => (r.head.id, r(1).id, Seq.empty[String])).toSeq
+    val reference:Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map{
+      r =>
+        ReferencePathSegment(r.head.id, r(1).id, Seq.empty[String])
+    }.toSeq
 
     // Look up the cache
     optimalSequencesCache get state match {
@@ -95,13 +94,13 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
         searcher.solve() match {
           case Some(solution) =>
 
-            val sequence: Seq[DoSearch.Result] = DoSearch.actionSequence(solution, searcher)
+            val sequence: Seq[SearchResult] = DoSearch.actionSequence(solution, searcher)
             val choice = sequence.head.action
             optimalSequencesCache.cache(state, sequence)
             choice
-            // TODO add a random choice with a controlled seed here
           case None =>
-            val sequence = Seq(DoSearch.Result(state, ExploreEndpoints_ExploitQuery, 200, 0, 0))
+            val choice = agent.possibleActions.randomElement
+            val sequence = Seq(SearchResult(state, choice, agent paperAmountFor choice, None, None))
             optimalSequencesCache.cache(state, sequence)
             ExploreEndpoints_ExploitQuery
         }
@@ -110,7 +109,9 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
 
   def learnPolicy(observer:Option[EpisodeObserver] = None):Policy = {
 
-    // Uniform random number generator from 0 to the number of actions
+    // Import the implicit conversions
+    import focusedreading.implicits._
+
 
     var previousPolicy:Option[LibSVMClassifier[FocusedReadingAction, String]] = None
 
@@ -131,7 +132,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
             val actionLog = new mutable.ListBuffer[FocusedReadingAction]()
 
             while(!environment.finishedEpisode){
-              val state = environment.observeState.asInstanceOf[FocusedReadingState]
+              val state:FocusedReadingState = environment.observeState
 
               val oracleChoice = askExpert(environment)
 

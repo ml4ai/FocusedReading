@@ -1,8 +1,8 @@
 package focusedreading.imitation_learning
 import com.redis.RedisClient
-import focusedreading.reinforcement_learning.actions.{ExploreEndpoints_ExploitQuery, FocusedReadingAction}
+import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.states.FocusedReadingState
-import focusedreading.supervision.search.executable.DoSearch
+import focusedreading.supervision.search.SearchResult
 
 class RedisCache(server:String = "localhost", port:Int = 6379) extends SolutionsCache {
 
@@ -16,7 +16,7 @@ class RedisCache(server:String = "localhost", port:Int = 6379) extends Solutions
   }
 
 
-  override def apply(state: FocusedReadingState): Seq[DoSearch.Result] = withRedis {
+  override def apply(state: FocusedReadingState): Seq[SearchResult] = withRedis {
     client =>
       val key = state.hashCode()
       val elementsIds = client.lrange(s"optimalSequence:$key", 0, -1)
@@ -26,12 +26,12 @@ class RedisCache(server:String = "localhost", port:Int = 6379) extends Solutions
             case Some(id) =>
               client.hgetall1[String, String](s"solutionElement:$id") match {
                 case Some(m) =>
-                  DoSearch.Result(
+                  SearchResult(
                     FocusedReadingState.fromJson(m("state")),
                     FocusedReadingAction(m("action")),
                     m("cost").toDouble,
-                    m("estimatedRemaining").toInt,
-                    m("actualRemaining").toInt
+                    Some(m("estimatedRemaining").toInt),
+                    Some(m("actualRemaining").toInt)
                   )
                 case None =>
                   throw new Exception("Shouldn't fall in here. Check!!")
@@ -46,13 +46,13 @@ class RedisCache(server:String = "localhost", port:Int = 6379) extends Solutions
 
   override def contains(state: FocusedReadingState): Boolean = withRedis { _.exists(s"optimalSequence:${state.hashCode()}") }
 
-  override def get(state: FocusedReadingState): Option[Seq[DoSearch.Result]] = if (contains(state)) {
+  override def get(state: FocusedReadingState): Option[Seq[SearchResult]] = if (contains(state)) {
     Some(this (state))
   } else {
     None
   }
 
-  override def cache(state: FocusedReadingState, value: Seq[DoSearch.Result]): Unit = withRedis {
+  override def cache(state: FocusedReadingState, value: Seq[SearchResult]): Unit = withRedis {
     client =>
       val key = state.hashCode()
       // Map the value to a sequence of tuples of (hash as id,redis hash string)

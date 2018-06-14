@@ -10,7 +10,7 @@ class AStar(initialState:FRSearchState, maxCost:Double = Double.PositiveInfinity
   extends UniformCostSearch(initialState, maxCost) {
 
   // Instantiate the heuristic object
-  private val steps = initialState.groundTruth.map( gt => (Participant.get("", gt._1), Participant.get("", gt._2)))
+  private val steps = initialState.groundTruth.map( gt => (Participant.get("", gt.source), Participant.get("", gt.destination)))
   private val querier = initialState.agent.redisLuceneQuerier
   private val heuristic = new DocumentSetIntersectionHeuristic(steps, querier)
 

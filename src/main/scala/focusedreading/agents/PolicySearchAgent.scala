@@ -34,6 +34,22 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   with SQLIteIEStrategy {
 
 
+  /***
+    * Amount of papers to read associated with a particular action
+    * @param a Action to inspect
+    * @return Upper bountd to the number of papers to be read by a
+    */
+  def paperAmountFor(a:FocusedReadingAction):Int = a match {
+    case ExploreEndpoints_ExploitQuery => this.fewPapers
+    case ExploreEndpoints_ExploreManyQuery => this.manyPapers
+    case ExploreEndpoints_ExploreFewQuery => this.fewPapers
+    case ExploitEndpoints_ExploitQuery => this.fewPapers
+    case ExploitEndpoints_ExploreManyQuery => this.manyPapers
+    case ExploitEndpoints_ExploreFewQuery => this.fewPapers
+    case _ => throw new RuntimeException(s"Paper amount for $a not defined yet")
+  }
+
+
   override def clone():PolicySearchAgent = {
     val clone = new PolicySearchAgent(participantA, participantB, policy, referencePath, normalizationParameters)(this.indexPath, this.sqliteFile)
 
@@ -118,28 +134,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     super.reconcile(connections)
   }
 
-//  override def successStopCondition(source: Participant, destination: Participant, model: SearchModel): Option[Seq[Seq[Connection]]] = {
-//    val result = super.successStopCondition(source, destination, model)
-//
-//    result match {
-//      case Some(paths) => {
-//        val newPaths = paths.map {
-//          path =>
-//            path.map {
-//              connection =>
-//                //val references = this.references(connection.controller, connection.controlled, connection.sign)
-//                // TODO: Possible leak here
-//                Connection.get(connection.controller, connection.controlled, connection.sign/*, connection.evidence, references*/)
-//            }
-//
-//        }
-//
-//        Some(newPaths)
-//      }
-//      case None => None
-//    }
-//  }
-
 
   override def choseQuery(a: Participant,
                           b: Participant,
@@ -197,9 +191,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       val exploreManyQuery = Query(QueryStrategy.Disjunction, many, a, Some(b))
       val exploitQuery = Query(QueryStrategy.Conjunction, few, a, Some(b))
 
-      val exploreFewIRScores = this.informationRetrival(exploreFewQuery) map (_._2) toSeq
-      val exploreManyIRScores = this.informationRetrival(exploreManyQuery) map (_._2) toSeq
-      val exploitIRScores = this.informationRetrival(exploitQuery) map (_._2) toSeq
+      val exploreFewIRScores = this.informationRetrieval(exploreFewQuery) map (_._2) toSeq
+      val exploreManyIRScores = this.informationRetrieval(exploreManyQuery) map (_._2) toSeq
+      val exploitIRScores = this.informationRetrieval(exploitQuery) map (_._2) toSeq
 
 
       val compA = model.getConnectedComponentOf(a).get
@@ -277,7 +271,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     // Build a query object based on the action
     val query = queryActionToStrategy(action, a, b)
 
-    val paperIds = this.informationRetrival(query)
+    val paperIds = this.informationRetrieval(query)
 
     this.papersRead ++= paperIds map (_._1.intern())
 
@@ -456,7 +450,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
   }
 
-  def possibleActions(): Seq[Action] = PolicySearchAgent.usedActions
+  def possibleActions: Seq[Action] = PolicySearchAgent.usedActions
   /////////////////
 
 
@@ -473,6 +467,7 @@ object PolicySearchAgent {
     ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
 
   //val config = ConfigFactory.load()
+  // TODO: make this code respect the configuration choice
   val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
 
   def getActiveActions: Set[Action] = usedActions.toSet

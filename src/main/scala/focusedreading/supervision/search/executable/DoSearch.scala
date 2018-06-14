@@ -2,21 +2,19 @@ package focusedreading.supervision.search.executable
 
 import java.io.{FileOutputStream, ObjectOutputStream}
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.ir.LuceneQueries
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
-import focusedreading.supervision.CreateExpertOracle
-import focusedreading.supervision.search.FRSearchState.GoldDatum
-import focusedreading.supervision.search.{AStar, FRSearchState, Node, UniformCostSearch}
+import focusedreading.supervision.search.{FRSearchState, Node, SearchResult, UniformCostSearch}
+import focusedreading.supervision.{CreateExpertOracle, ReferencePathSegment}
 import focusedreading.{Connection, Participant}
 import org.clulab.utils.Serializer
 
 import scala.collection.mutable
 import scala.io.Source
-
 
 object DoSearch extends App{
 
@@ -24,10 +22,8 @@ object DoSearch extends App{
   private implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
   private implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
-  // State, action, Cost, estimated remaining cost, Actual Remaining cost
-  case class Result(state:FocusedReadingState, action:FocusedReadingAction, cost:Double, estimatedRemaining:Int, actualRemaining:Int)
 
-  def persistResults(results:Map[(String, String), Option[Seq[Result]]], path:String){
+  def persistResults(results:Map[(String, String), Option[Seq[SearchResult]]], path:String){
     val osw = new ObjectOutputStream(new FileOutputStream(path))
     osw.writeObject(results)
     osw.close()
@@ -65,12 +61,18 @@ object DoSearch extends App{
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  def actionSequence(node:Node, searcher:UniformCostSearch):List[Result] = {
+  def actionSequence(node:Node, searcher:UniformCostSearch):List[SearchResult] = {
     if(node.parent.isDefined){
       if(node.action.isDefined){
         val state = node.state
         val frState = state.agent.observeState.asInstanceOf[FocusedReadingState]
-        Result(frState, node.action.get, node.pathCost, searcher.estimateRemaining(state), node.state.remainingCost) :: actionSequence(node.parent.get, searcher)
+        SearchResult(
+          frState,
+          node.action.get,
+          node.pathCost,
+          Some(searcher.estimateRemaining(state)),
+          Some(node.state.remainingCost)) :: actionSequence(node.parent.get, searcher
+        )
       }
       else{
         actionSequence(node.parent.get, searcher)
@@ -93,7 +95,7 @@ object DoSearch extends App{
 
   val trainingPaths = Source.fromFile(trainingFile).getLines().toList.map(_.split("\t")).map(s => s.sliding(2).toList)
 
-  val groundTruth: Map[(String, String), Option[GoldDatum]] = CreateExpertOracle.deserialize(fragmentsFile)
+  val groundTruth: Map[(String, String), Option[Seq[(String, String, Seq[String])]]] = CreateExpertOracle.deserialize(fragmentsFile)
 
   val trainingData = trainingPaths.map{
     s =>
@@ -106,7 +108,7 @@ object DoSearch extends App{
       key -> sequence
   }.toMap
 
-  val solutions = new mutable.HashMap[(String, String), Option[Seq[Result]]]()
+  val solutions = new mutable.HashMap[(String, String), Option[Seq[SearchResult]]]()
 
   val total = trainingData.size
 
@@ -119,9 +121,9 @@ object DoSearch extends App{
 
     println(s"${ix+1} out of $total.\t$k")
 
-    val path = trainingData(k)
+    val path = trainingData(k) map { case (a, b, c) => ReferencePathSegment(a, b, c) }
 
-    val (participantA, participantB) = (Participant.get("", path.head._1), Participant.get("", path.last._2))
+    val (participantA, participantB) = (Participant.get("", path.head.source), Participant.get("", path.last.destination))
 
     val agent = new PolicySearchAgent(participantA, participantB)
 
@@ -147,5 +149,3 @@ object DoSearch extends App{
   persistResults(solutions.toMap, "solutions.ser")
 
 }
-
-
