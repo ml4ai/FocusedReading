@@ -1,7 +1,8 @@
 package focusedreading.supervision.search
 
-import  focusedreading.implicits._
+import focusedreading.implicits._
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
+import focusedreading.reinforcement_learning.states.FocusedReadingState
 
 import scala.collection.mutable
 
@@ -76,5 +77,26 @@ class UniformCostSearch(initialState:FRSearchState, maxCost:Double = Double.Posi
     }
 
     solution
+  }
+
+  def actionSequence(node:Node):List[SearchResult] = {
+    if(node.parent.isDefined){
+      if(node.action.isDefined){
+        val state = node.state
+        val frState:FocusedReadingState = state.agent.observeState
+        SearchResult(
+          frState,
+          node.action.get,
+          node.pathCost,
+          Some(this.estimateRemaining(state)),
+          Some(node.state.remainingCost)) :: actionSequence(node.parent.get)
+      }
+      else{
+        actionSequence(node.parent.get)
+      }
+    }
+    else{
+      Nil
+    }
   }
 }

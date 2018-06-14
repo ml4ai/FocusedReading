@@ -19,7 +19,7 @@ import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
 import org.sarsamora.policies.Policy
 import org.sarsamora.policy_iteration.EpisodeObserver
-import focusedreading.implicits.{action2frAction, RandomizableSeq}
+import focusedreading.implicits.RandomizableSeq
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -89,8 +89,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
         val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
         searcher.solve() match {
           case Some(solution) =>
-
-            val sequence: Seq[SearchResult] = DoSearch.actionSequence(solution, searcher)
+            val sequence: Seq[SearchResult] = searcher.actionSequence(solution)
             val choice = sequence.head.action
             optimalSequencesCache.cache(state, sequence)
             choice

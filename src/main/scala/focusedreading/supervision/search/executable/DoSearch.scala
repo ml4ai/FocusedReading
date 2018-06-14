@@ -62,28 +62,6 @@ object DoSearch extends App{
   // To avoid a race condition further down
   LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
 
-  def actionSequence(node:Node, searcher:UniformCostSearch):List[SearchResult] = {
-    if(node.parent.isDefined){
-      if(node.action.isDefined){
-        val state = node.state
-        val frState:FocusedReadingState = state.agent.observeState
-        SearchResult(
-          frState,
-          node.action.get,
-          node.pathCost,
-          Some(searcher.estimateRemaining(state)),
-          Some(node.state.remainingCost)) :: actionSequence(node.parent.get, searcher
-        )
-      }
-      else{
-        actionSequence(node.parent.get, searcher)
-      }
-    }
-    else{
-      Nil
-    }
-  }
-
 
   private val configuration = ConfigFactory.load()
   val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
@@ -136,7 +114,7 @@ object DoSearch extends App{
     val result = solver.solve()
 
     solutions(k) = result match {
-      case Some(r) => Some(actionSequence(r, solver))
+      case Some(r) => Some(solver.actionSequence(r))
       case None => None
     }
   }
