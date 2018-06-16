@@ -104,7 +104,7 @@ object SearchTreeExplorer extends App with LazyLogging {
     val actions = environment.possibleActions().map(_.asInstanceOf[FocusedReadingAction])
 
     def walker(s:FocusedReadingState, a:PolicySearchAgent, as:Seq[FocusedReadingAction]): Unit ={
-      logger.info(s"Walking environment $environment at iteration ${agent.iterationNum}")
+      logger.info(s"Walking environment $environment at iteration ${a.iterationNum}")
       if(!a.hasFinished(environment.participantA, environment.participantB, a.model, false)) {
         for (action <- as) {
           val newAgent = a.clone
@@ -144,12 +144,10 @@ object SearchTreeExplorer extends App with LazyLogging {
           val choice = sequence.head.action
           // Cache all the nested subsequences from the current answer
           cacheSequence(state, sequence)
-          choice
         case None =>
           val choice = agent.possibleActions.randomElement
           val sequence = Seq(SearchResult(state, choice, agent paperAmountFor choice, None, None))
           optimalSequencesCache.cache(state, sequence)
-          choice
       }
     }
     else
