@@ -154,5 +154,5 @@ object SearchTreeExplorer extends App with LazyLogging {
       logger.info("Cache Hit!")
   }
 
-  exploreEnvironment(imitationLearningFabric())
+  exploreEnvironment(imitationLearningFabric)
 }
