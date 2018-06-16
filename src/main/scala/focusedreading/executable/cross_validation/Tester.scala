@@ -155,7 +155,7 @@ class Tester(dataSet:Iterable[Tuple2[String, String]], policy:EpGreedyPolicy) ex
     }
 
 
-    val averageRuntime = (times.sum / times.size)
+    val averageRuntime = times.sum / times.size
 
     logger.info(s"Average running time: $averageRuntime")
     logger.info(s"Unique papers read: ${papers.toSet.size}")
@@ -171,7 +171,7 @@ class Tester(dataSet:Iterable[Tuple2[String, String]], policy:EpGreedyPolicy) ex
     * Prints the sentences that back the evidence found
     * @param path
     */
-  def printEvidence(path: Seq[Connection], agent:SearchAgent) = {
+  def printEvidence(path: Seq[Connection], agent:SearchAgent)  {
     val evidence:Seq[Iterable[String]] = path map agent.getEvidence
 
     for((c, e) <- path zip evidence){

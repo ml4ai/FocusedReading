@@ -10,7 +10,7 @@ import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.search.{FRSearchState, Node, SearchResult, UniformCostSearch}
-import focusedreading.supervision.{CreateExpertOracle, ReferencePathSegment}
+import focusedreading.supervision.ReferencePathSegment
 import focusedreading.{Configuration, Connection, Participant}
 import org.clulab.utils.Serializer
 

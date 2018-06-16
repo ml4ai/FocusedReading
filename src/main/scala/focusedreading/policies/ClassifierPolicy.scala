@@ -21,7 +21,6 @@ class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]
 
   // Load the configuration parameters
   private val supervisionConfig = Configuration.ExpertOracle
-
   private val toBeExcluded = Configuration.ExpertOracle.activeFeatures.toSet
 
   override def selectAction(s: State, possibleActions: Seq[Action]): Action = {

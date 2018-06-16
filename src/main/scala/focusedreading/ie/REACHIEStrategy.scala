@@ -313,7 +313,7 @@ trait REACHIEStrategy extends IEStrategy {
     //Serializer.save[Seq[CorefMention]](ann, file.getAbsolutePath)
   }
 
-  override def informationExtraction(pmcids: Iterable[String]) = {
+  override def informationExtraction(pmcids: Iterable[String]): Iterable[Connection] = {
 
     val indexPath = Configuration.Lucene.indexPath
     val luceneQuerier = new LuceneQueries(indexPath)

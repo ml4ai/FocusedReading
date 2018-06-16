@@ -1,18 +1,16 @@
-package focusedreading.supervision
+package focusedreading.supervision.search.executable
 
 import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.sql.DriverManager
 
-import com.typesafe.config.ConfigFactory
 import focusedreading.Configuration
+import scalax.collection.GraphPredef._
+import scalax.collection.edge.Implicits._
+import scalax.collection.edge.LDiEdge
+import scalax.collection.mutable.Graph
 
 import scala.collection.mutable
 import scala.io.Source
-import scala.sys.process.ProcessBuilder.Source
-import scalax.collection.edge.LDiEdge
-import scalax.collection.mutable.Graph
-import scalax.collection.GraphPredef._
-import scalax.collection.edge.Implicits._
 
 
 

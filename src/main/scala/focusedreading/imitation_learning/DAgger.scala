@@ -24,7 +24,10 @@ import focusedreading.implicits.RandomizableSeq
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) extends LazyLogging{
+class DAgger(episodeFabric: => Option[SimplePathEnvironment],
+             epochs:Int,
+             epochSize:Int, alphas:Iterator[Double])
+  extends LazyLogging{
 
   // Load the configuration parameters
   private val toBeIncluded = Configuration.Imitation.activeFeatures.toSet
