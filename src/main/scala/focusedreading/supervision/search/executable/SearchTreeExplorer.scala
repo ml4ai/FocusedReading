@@ -29,7 +29,11 @@ object SearchTreeExplorer extends App with LazyLogging {
 
   val trainingInputPath = Configuration.Training.inputPath
   val testingInputPath = Configuration.Testing.inputPath
-  val dataSet = (readLines(trainingInputPath) ++ readLines(testingInputPath)).iterator
+  val x = readLines(trainingInputPath) ++ readLines(testingInputPath)
+  val dataSet = x.iterator
+
+  println(x.size)
+
 
 
   def imitationLearningFabric() = {

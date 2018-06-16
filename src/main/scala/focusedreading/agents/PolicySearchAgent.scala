@@ -65,7 +65,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone.prevEdgesCount = this.prevEdgesCount
     clone.unchangedIterations = this.unchangedIterations
 
-    clone.iterationNum = clone.iterationNum
+    clone.iterationNum = this.iterationNum
     clone.triedPairs = this.triedPairs
     clone.papersRead = this.papersRead
     //clone.trace ++= this.trace
