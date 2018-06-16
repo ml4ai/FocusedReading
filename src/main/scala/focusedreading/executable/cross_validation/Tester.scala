@@ -3,7 +3,8 @@ package focusedreading.executable.cross_validation
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile, SearchAgent}
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.entities.{Connection, Participant}
+import focusedreading.{Configuration}
 import org.sarsamora.policies.EpGreedyPolicy
 
 import scala.collection.mutable

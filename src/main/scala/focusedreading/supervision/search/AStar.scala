@@ -1,6 +1,6 @@
 package focusedreading.supervision.search
 
-import focusedreading.Participant
+import focusedreading.entities.Participant
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.supervision.search.heuristics.DocumentSetIntersectionHeuristic
 

@@ -5,13 +5,14 @@ import java.io.{FileOutputStream, ObjectOutputStream}
 import com.typesafe.config.ConfigFactory
 import focusedreading.implicits._
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
-import focusedreading.ir.LuceneQueries
+import focusedreading.ir.queries.LuceneQueries
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.search.{FRSearchState, Node, SearchResult, UniformCostSearch}
 import focusedreading.supervision.ReferencePathSegment
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.Configuration
+import focusedreading.entities.{Connection, Participant}
 import org.clulab.utils.Serializer
 
 import scala.collection.mutable

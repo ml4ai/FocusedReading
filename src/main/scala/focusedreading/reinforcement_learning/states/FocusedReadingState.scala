@@ -7,28 +7,12 @@ package focusedreading.reinforcement_learning.states
   * Contains the state representation data structure and related code for Focused Reading
   */
 
-import focusedreading.agents.FocusedReadingStage
 import org.json4s._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{write, read}
 
 import collection.mutable
 import org.sarsamora.states.State
-
-object RankBin extends Enumeration {
-  val First, Upper, Mid, Bottom = Value
-
-  def toFeatures(b:RankBin.Value, prefix:String):Map[String, Double] = {
-    // Get rid of one bin to avoid mulitcolinearity in the design matrix
-    val values = RankBin.values.toSeq//.dropRight(1)
-
-    values.map{
-      v =>
-        val is = if(v == b) 1.0 else 0.0
-        s"$prefix-${v.toString}" -> is
-    }.toMap
-  }
-}
 
 /**
   * State representation of the FR search process
@@ -111,11 +95,11 @@ case class FocusedReadingState(endpointA:String,
       "unchangedIterations" -> unchangedIterations,
       "paUngrounded" -> (paUngrounded match { case true => 1.0; case false => 0.0}),
       "pbUngrounded" -> (pbUngrounded match { case true => 1.0; case false => 0.0})
-    )  //++ RankBin.toFeatures(paRank, "paRank") ++ RankBin.toFeatures(pbRank, "pbRank")
+    )
 
 
     // Keep trak of the feature values
-    FocusedReadingState.recordObsevation(featureValues)
+    FocusedReadingState.recordObservation(featureValues)
 
     // Normalize if requested
     val retVal = normalizationParameters match {
@@ -142,7 +126,7 @@ object FocusedReadingState extends Serializable {
 
   val featureValueObservations = new mutable.HashMap[String, mutable.ArrayBuffer[Double]]()
 
-  def recordObsevation(values:Map[String, Double]): Unit ={
+  def recordObservation(values:Map[String, Double]): Unit ={
     for((k, v) <- values){
       // Lazily create the array buffer for the feature
       if(!featureValueObservations.contains(k)){

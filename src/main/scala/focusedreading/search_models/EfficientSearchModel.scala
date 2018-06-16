@@ -1,5 +1,5 @@
-package focusedreading.models
-import focusedreading.{Connection, Participant}
+package focusedreading.search_models
+import focusedreading.entities.{Connection, Participant}
 
 import scala.collection.mutable
 

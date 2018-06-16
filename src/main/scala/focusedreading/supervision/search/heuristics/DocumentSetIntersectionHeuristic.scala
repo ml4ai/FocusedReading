@@ -1,9 +1,9 @@
 package focusedreading.supervision.search.heuristics
 
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.Participant
+import focusedreading.entities.Participant
 import focusedreading.ie.IEStrategy
-import focusedreading.ir.LuceneQueries
+import focusedreading.ir.queries.LuceneQueries
 import focusedreading.supervision.search.FRSearchState
 
 import scala.collection.SortedSet

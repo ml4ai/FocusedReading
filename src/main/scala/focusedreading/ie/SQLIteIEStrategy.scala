@@ -1,8 +1,7 @@
 package focusedreading.ie
 
 import focusedreading.sqlite.SQLiteQueries
-import focusedreading.{Connection, Participant}
-import com.typesafe.config.{Config, ConfigFactory}
+import focusedreading.entities.{Connection, Participant}
 
 /**
   * Created by enrique on 12/03/17.
@@ -10,14 +9,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 trait SQLIteIEStrategy extends IEStrategy{
 
 
-  def sqlitePath:String
+  val sqlitePath:String
   val daIE = new SQLiteQueries(sqlitePath)
 
   override def informationExtraction(pmcids: Iterable[String]):Iterable[Connection] = {
 
     // Query the DB
     //val info = pmcids.take(100).grouped(40) flatMap daIE.ieQuery
-    val info = pmcids.grouped(40) flatMap daIE.ieQuery // TODO: parameterize this
+    val info = pmcids.grouped(40) flatMap daIE.ieQuery
 
     // Group the info by interaction
     val groups = info.toSeq.groupBy(i => (i._1, i._2, i._3))

@@ -5,7 +5,6 @@ import java.util.Random
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.PolicySearchAgent
-import focusedreading.ir.LuceneQueries
 import focusedreading.policies.ClassifierPolicy
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
@@ -14,12 +13,14 @@ import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.ReferencePathSegment
 import focusedreading.supervision.search.executable.{DoSearch, SVMPolicyClassifier}
 import focusedreading.supervision.search._
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.Configuration
+import focusedreading.entities.{Connection, Participant}
 import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
 import org.sarsamora.policies.Policy
 import org.sarsamora.policy_iteration.EpisodeObserver
 import focusedreading.implicits.RandomizableSeq
+import focusedreading.ir.queries.LuceneQueries
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
@@ -179,10 +180,10 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment],
                         previousPolicy:Option[LibSVMClassifier[FocusedReadingAction, String]]):FocusedReadingAction =
     previousPolicy match {
       case None =>
-        PolicySearchAgent.getActiveActions.randomElement
+        PolicySearchAgent.activeActions.randomElement
       case Some(classifier) =>
         val features = SVMPolicyClassifier.filterFeatures(state.toFeatures, toBeIncluded)
-        val datum = SVMPolicyClassifier.toDatum(features, PolicySearchAgent.getActiveActions(0))
+        val datum = SVMPolicyClassifier.toDatum(features, PolicySearchAgent.activeActions(0))
         classifier.classOf(datum)
     }
 
@@ -205,7 +206,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment],
     val numSamples = experience.size
     val numClasses = frequencies.keySet.size.toDouble
 
-    val weights = PolicySearchAgent.getActiveActions.map{
+    val weights = PolicySearchAgent.activeActions.map{
       k =>
         frequencies.get(k) match {
           case Some(num)=> k -> numSamples / (numClasses*num)

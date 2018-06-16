@@ -4,7 +4,7 @@ import java.sql.DriverManager
 
 import collection.mutable
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.{Connection, Participant}
+import focusedreading.entities.{Connection, Participant}
 
 /**
   * Created by enrique on 26/02/17.

@@ -1,7 +1,7 @@
 package focusedreading.pc_strategies
 
-import focusedreading.Participant
-import focusedreading.models.SearchModel
+import focusedreading.entities.Participant
+import focusedreading.search_models.SearchModel
 
 import scala.collection.mutable
 

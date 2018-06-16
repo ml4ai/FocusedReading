@@ -1,11 +1,11 @@
-package focusedreading.models
+package focusedreading.search_models
 
-import focusedreading.{Connection, Participant}
-
+import focusedreading.entities.{Connection, Participant}
 import scalax.collection.edge.LDiEdge
 import scalax.collection.mutable.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.edge.Implicits._
+
 import collection.mutable
 import scala.annotation.tailrec
 

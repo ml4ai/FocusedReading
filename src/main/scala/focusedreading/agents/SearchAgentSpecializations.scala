@@ -1,24 +1,13 @@
 package focusedreading.agents
 
-import java.io.{FileOutputStream, OutputStreamWriter}
-
-import com.typesafe.scalalogging.LazyLogging
-import focusedreading.pc_strategies.{MostConnectedParticipantsStrategy, PolicyParticipantsStrategy}
-import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
-import focusedreading.ir.QueryStrategy._
-import focusedreading.ir.{LuceneIRStrategy, Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
-import focusedreading.models._
-import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingState, RankBin}
-import org.sarsamora.actions.Action
-import org.sarsamora.policies.Policy
-import org.sarsamora.states.State
 import focusedreading._
-import focusedreading.agents._
-import focusedreading.agents.FocusedReadingStage._
-
-
-import scala.collection.mutable
+import focusedreading.entities.Participant
+import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
+import focusedreading.ir.queries.QueryStrategy._
+import focusedreading.ir.LuceneIRStrategy
+import focusedreading.ir.queries.Query
+import focusedreading.search_models._
+import focusedreading.pc_strategies.MostConnectedParticipantsStrategy
 
 /*
  * Created by enrique on 18/02/17.
@@ -65,9 +54,6 @@ class RedisSQLiteSearchAgent(participantA:Participant, participantB:Participant)
 
   override val indexDir:String = indexPath.path
   override val sqlitePath: String = sqliteFile.path
-
-  ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
-
 
 
   override def choseQuery(source: Participant,

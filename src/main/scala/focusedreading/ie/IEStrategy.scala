@@ -1,7 +1,7 @@
 package focusedreading.ie
 
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.Connection
+import focusedreading.entities.Connection
 
 /**
   * Created by enrique on 20/02/17.

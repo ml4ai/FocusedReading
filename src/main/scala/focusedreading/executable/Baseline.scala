@@ -1,13 +1,12 @@
 package focusedreading.executable
 
 import java.io.{BufferedWriter, File, FileWriter}
-import java.nio.file.Paths
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.commons.io.FileUtils
+import focusedreading.Configuration
 import focusedreading.agents._
-import focusedreading.tracing.AgentRunTrace
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.entities.{Connection, Participant}
+import org.apache.commons.io.FileUtils
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
@@ -51,7 +50,7 @@ object Baseline extends App with LazyLogging{
       val participants = path flatMap (c => Set(c.controller, c.controlled))
 
 
-      val jsonObj = ("info" -> pathInfo) ~ ("degrees" -> participants.map(d => (d.toString -> model.degree(d))).toMap)
+      val jsonObj = ("info" -> pathInfo) ~ ("degrees" -> participants.map(d => d.toString -> model.degree(d)).toMap)
 
       val json = pretty(render(jsonObj))
 

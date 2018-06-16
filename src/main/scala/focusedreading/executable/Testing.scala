@@ -7,10 +7,10 @@ import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents._
 import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
 import focusedreading.sqlite.SQLiteQueries
-import focusedreading.tracing.AgentRunTrace
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.{Configuration}
 import org.sarsamora.policies._
 import com.typesafe.config.ConfigFactory
+import focusedreading.entities.{Connection, Participant}
 import focusedreading.policies.ClassifierPolicy
 import focusedreading.reinforcement_learning.states.NormalizationParameters
 

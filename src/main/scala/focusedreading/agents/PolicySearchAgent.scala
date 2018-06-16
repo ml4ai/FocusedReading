@@ -1,13 +1,16 @@
 package focusedreading.agents
 
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.entities.{Connection, Participant}
+import focusedreading.{Configuration}
+import focusedreading.entities.Connection
 import focusedreading.ie.SQLIteIEStrategy
-import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
-import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
-import focusedreading.models.{EfficientSearchModel, GFSModel, SearchModel}
+import focusedreading.ir.queries.{Query, QueryStrategy}
+import focusedreading.ir.queries.QueryStrategy.{Conjunction, Disjunction}
+import focusedreading.ir.RedisIRStrategy
+import focusedreading.search_models.{EfficientSearchModel, SearchModel}
 import focusedreading.pc_strategies.PolicyParticipantsStrategy
 import focusedreading.reinforcement_learning.actions._
-import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters, RankBin}
+import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
@@ -77,11 +80,11 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     clone
   }
 
-  override def indexDir: String = indexPath.path
-  override def sqlitePath: String = sqliteFile.path
+  lazy val indexDir: String = indexPath.path
+  lazy val sqlitePath: String = sqliteFile.path
 
   // Fields
-  val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.usedActions.map(_.toString -> 0).toMap
+  val actionCounters: mutable.Map[String, Int] = new mutable.HashMap[String, Int]() ++ PolicySearchAgent.activeActions.map(_.toString -> 0).toMap
 
 
   this.introductions += participantA -> 0
@@ -140,10 +143,10 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
                           b: Participant,
                           model: SearchModel): Query = policy match {
 
-    case Some(p) => {
+    case Some(p) =>
       queryLog = (a, b)::queryLog
 
-      val possibleActions: Seq[Action] = PolicySearchAgent.usedActions
+      val possibleActions: Seq[Action] = PolicySearchAgent.activeActions
 
       // Create state
       val state = this.observeState
@@ -156,7 +159,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
 
       queryActionToStrategy(action, a, b)
-    }
     case None => throw new IllegalStateException("This agent wasn't provided with a policy")
   }
 
@@ -192,9 +194,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       val exploreManyQuery = Query(QueryStrategy.Disjunction, many, a, Some(b))
       val exploitQuery = Query(QueryStrategy.Conjunction, few, a, Some(b))
 
-      val exploreFewIRScores = this.informationRetrieval(exploreFewQuery) map (_._2) toSeq
-      val exploreManyIRScores = this.informationRetrieval(exploreManyQuery) map (_._2) toSeq
-      val exploitIRScores = this.informationRetrieval(exploitQuery) map (_._2) toSeq
+      val exploreFewIRScores = (this.informationRetrieval(exploreFewQuery) map (_._2)).toSeq
+      val exploreManyIRScores = (this.informationRetrieval(exploreManyQuery) map (_._2)).toSeq
+      val exploitIRScores = (this.informationRetrieval(exploitQuery) map (_._2)).toSeq
 
 
       val compA = model.getConnectedComponentOf(a).get
@@ -224,36 +226,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     else{
 
       FocusedReadingState(participantA.id, participantB.id, searchGraphElements, 0, 0, iterationNum, 0,
-        0, false, 0, 0, false,
-        false, Seq(0), Seq(0),
+        0, sameComponent = false, 0, 0, paUngrounded = false,
+        pbUngrounded = false, Seq(0), Seq(0),
         Seq(0), 0)
-    }
-  }
-
-  private def getRank(p:Participant, ranks:Map[Participant, Int]):RankBin.Value = {
-    val rank = ranks(p)
-    if(rank == 0)
-      RankBin.First
-    else{
-      val size = ranks.size
-      if(size < 3)
-        RankBin.Upper
-      else{
-        val stride = size/3
-        val cutPoints = 1.to(3).map(i => i*stride).reverse
-
-        var ret =RankBin.Bottom
-
-        val bins = Seq(RankBin.Bottom, RankBin.Mid, RankBin.Upper)
-
-        for((point, i) <- cutPoints.zipWithIndex){
-          if(rank <= point)
-            ret = bins(i)
-        }
-
-        ret
-      }
-
     }
   }
 
@@ -261,9 +236,10 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   private def executePolicyQueryStage(action:Action, persist:Boolean):Double = {
 
     // Compute the reward shaping potential in the current state
-    val prevPotential = useRewardShaping match {
-      case false => 0.0
-      case true => shapingPotential
+    val prevPotential = if (useRewardShaping) {
+      shapingPotential
+    } else {
+      0.0
     }
 
     // Fetch the chosen participants (endpoints)
@@ -321,8 +297,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     rewardEvaluated += 1
     /////////////////
     // Return the observed reward
-    if(!this.hasFinished(participantA, participantB, model, true)){
+    if(!this.hasFinished(participantA, participantB, model, mutate = true)){
       // If this episode hasn't finished
+      // TODO: Parameterize the reward structure
       -0.05 + shaping
     }
     else{
@@ -364,7 +341,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
           // Iterate through every pair of participants in the reference path to find a path among them
           for(pair <- pairs){
-            val (a, b) = (pair(0), pair(1))
+            val (a, b) = (pair.head, pair(1))
             // If the previous segment wasn't found, then not continue
             if(flag){
               // Test whether the destination exists in the model
@@ -451,7 +428,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
 
   }
 
-  def possibleActions: Seq[Action] = PolicySearchAgent.usedActions
+  def possibleActions: Seq[Action] = PolicySearchAgent.activeActions
   /////////////////
 
 
@@ -462,13 +439,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   * Companion object.
   */
 object PolicySearchAgent {
-  // All the possible actions
-  val usedActions = Seq(ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploitQuery,
-    ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
-
-  // TODO: make this code respect the configuration choice
-  private val elements = Configuration.MDP.activeActions.toSet
-
-  def getActiveActions: Seq[FocusedReadingAction] = usedActions
+  private val elements = Configuration.MDP.activeActions.toSet map FocusedReadingAction.apply
+  lazy val activeActions: Seq[FocusedReadingAction] = FocusedReadingAction.allActions filter elements.contains
 }
 

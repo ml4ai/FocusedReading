@@ -2,8 +2,9 @@ package focusedreading.executable
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.{Configuration, Participant}
+import focusedreading.Configuration
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
+import focusedreading.entities.Participant
 import focusedreading.imitation_learning.DAgger
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
@@ -88,7 +89,7 @@ object TrainingImitation extends App with LazyLogging {
 
 
   val imitator = new DAgger(imitationLearningFabric, epochs, trainingPaths.size, alphas)
-  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions.toSet
+  val activeActions:Set[Action] = PolicySearchAgent.activeActions.toSet
 
 
   // Iterate the policy and it's convergence status

@@ -1,7 +1,7 @@
 package focusedreading.pc_strategies
 
-import focusedreading.Participant
-import focusedreading.models._
+import focusedreading.entities.Participant
+import focusedreading.search_models._
 import focusedreading.reinforcement_learning.actions._
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
@@ -12,11 +12,6 @@ import scala.collection.mutable
 /**
   * Created by enrique on 19/02/17.
   */
-
-object Color extends Enumeration {
-  type Color = Value
-  val White, Black = Value
-}
 
 trait ParticipantChoosingStrategy {
 

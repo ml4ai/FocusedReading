@@ -6,7 +6,8 @@ import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
-import focusedreading.{Configuration, Participant}
+import focusedreading.Configuration
+import focusedreading.entities.Participant
 import org.sarsamora.actions.Action
 import org.sarsamora.policies.{EpGreedyPolicy, Policy}
 import org.sarsamora.policy_iteration.td.QLearning
@@ -131,7 +132,7 @@ object Training extends App with LazyLogging {
   //////////////////////////
 
   val policyIteration = new QLearning(focusedReadingFabric, numEpisodes, burnInEpisodes, alphas, decay, lambda)
-  val activeActions:Set[Action] = PolicySearchAgent.getActiveActions.toSet
+  val activeActions:Set[Action] = PolicySearchAgent.activeActions.toSet
   val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 
   // Decaying epsilon

@@ -1,7 +1,7 @@
 package focusedreading.supervision.search
 
-import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
+import focusedreading.entities.Participant
 import focusedreading.supervision.ReferencePathSegment
 import focusedreading.supervision.search.heuristics.DocumentSetIntersectionHeuristic
 
@@ -42,7 +42,7 @@ case class FRSearchState(agent:PolicySearchAgent, groundTruth:Seq[ReferencePathS
       Double.PositiveInfinity
     }
     else{
-      agent.papersRead.size //  TODO: Keep an eye on this, maybe change it for a better cost function, consider the action length
+      agent.papersRead.size
     }
   }
 

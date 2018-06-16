@@ -1,8 +1,8 @@
 package focusedreading.pc_strategies
 
-import focusedreading.Participant
 import focusedreading.agents.PolicySearchAgent
-import focusedreading.models.SearchModel
+import focusedreading.entities.Participant
+import focusedreading.search_models.SearchModel
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import org.sarsamora.actions.Action
@@ -114,7 +114,7 @@ trait PolicyParticipantsStrategy extends ParticipantChoosingStrategy{
 
 
       // Choose the action
-      val action = p.selectAction(observeState, PolicySearchAgent.usedActions)
+      val action = p.selectAction(observeState, PolicySearchAgent.activeActions)
 
       lastActionChosen = Some(action)
 

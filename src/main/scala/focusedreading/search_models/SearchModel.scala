@@ -1,6 +1,6 @@
-package focusedreading.models
+package focusedreading.search_models
 
-import focusedreading.{Participant, Connection}
+import focusedreading.entities.{Connection, Participant}
 
 /**
   * Created by enrique on 08/03/17.

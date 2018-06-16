@@ -3,10 +3,11 @@ package focusedreading.ie
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
+import focusedreading.entities.{Connection, Participant}
+import focusedreading.ir.queries.LuceneQueries
 import org.clulab.odin.{EventMention, Mention}
 import org.clulab.reach.PaperReader
-import focusedreading.ir.LuceneQueries
-import focusedreading.{Configuration, Connection, Participant}
+import focusedreading.{Configuration}
 import org.clulab.reach.grounding.KBResolution
 import org.clulab.reach.mentions.serialization.json.JSONSerializer
 import org.clulab.reach.mentions.serialization.json._

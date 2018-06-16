@@ -1,7 +1,7 @@
 package focusedreading.reinforcement_learning.environment
 
-import focusedreading.Participant
 import focusedreading.agents._
+import focusedreading.entities.Participant
 import org.sarsamora.environment.Environment
 import org.sarsamora.actions.Action
 import org.sarsamora.states.State
@@ -20,6 +20,7 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 
 
 
+  // TODO: Clarify this awkward composition: An agent operates within an environment. Is this valid within my abstraction of FR?
   val agent = new PolicySearchAgent(participantA, participantB, None, Some(referencePath), normalizationParameters)
 
   override def possibleActions(): Seq[Action] = agent.possibleActions
