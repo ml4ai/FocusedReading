@@ -2,6 +2,7 @@ package focusedreading.policies
 
 import collection.JavaConversions._
 import com.typesafe.config.ConfigFactory
+import focusedreading.Configuration
 import focusedreading.reinforcement_learning.actions.{ExploitEndpoints_ExploitQuery, FocusedReadingAction}
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.supervision.search.executable.SVMPolicyClassifier
@@ -19,11 +20,9 @@ class ClassifierPolicy(classifier:LibSVMClassifier[FocusedReadingAction, String]
   }
 
   // Load the configuration parameters
-  private val config = ConfigFactory.load()
+  private val supervisionConfig = Configuration.ExpertOracle
 
-  private val supervisionConfig = config.getConfig("expertOracle")
-
-  private val toBeExcluded = supervisionConfig.getStringList("includedFeatures").toSet
+  private val toBeExcluded = Configuration.ExpertOracle.activeFeatures.toSet
 
   override def selectAction(s: State, possibleActions: Seq[Action]): Action = {
     // Create a datum out of the state

@@ -6,7 +6,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.clulab.odin.{EventMention, Mention}
 import org.clulab.reach.PaperReader
 import focusedreading.ir.LuceneQueries
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import org.clulab.reach.grounding.KBResolution
 import org.clulab.reach.mentions.serialization.json.JSONSerializer
 import org.clulab.reach.mentions.serialization.json._
@@ -22,10 +22,7 @@ import scala.collection.parallel.ForkJoinTaskSupport
   */
 trait REACHIEStrategy extends IEStrategy {
 
-  val config: Config = ConfigFactory.load()
-
-
-
+  // TODO: Refator the code to avoid using this dummy path
   val reachOutputDir = "/work/enoriega/fillblanks/annotations"
   val taskSupport = new ForkJoinTaskSupport(new scala.concurrent.forkjoin.ForkJoinPool(20))
   var initialized = false // Flag to indicate whether reach has been initialized
@@ -318,8 +315,7 @@ trait REACHIEStrategy extends IEStrategy {
 
   override def informationExtraction(pmcids: Iterable[String]) = {
 
-    val indexPath = config.getConfig("lucene").getString("annotationsIndex")
-
+    val indexPath = Configuration.Lucene.indexPath
     val luceneQuerier = new LuceneQueries(indexPath)
 
     val paperSet = pmcids.map(p => new File(luceneQuerier.nxmlDir, s"$p.nxml").getAbsolutePath)

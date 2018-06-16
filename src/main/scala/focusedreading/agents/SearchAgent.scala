@@ -1,13 +1,12 @@
 package focusedreading.agents
 
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.pc_strategies.ParticipantChoosingStrategy
 import focusedreading.ie.IEStrategy
 import focusedreading.ir.{IRStrategy, Query}
 import focusedreading.models._
 import focusedreading.tracing.IterativeStep
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
@@ -38,9 +37,8 @@ object FocusedReadingStage extends Enumeration{
   */
 trait SearchAgent extends LazyLogging with IRStrategy with IEStrategy with ParticipantChoosingStrategy {
 
-  val mdpConfig = ConfigFactory.load().getConfig("MDP")
-  val maxIterations = mdpConfig.getInt("maxIterations")
-  val maxUnchangedIterations = mdpConfig.getInt("maxUnchangedIterations")
+  val maxIterations = Configuration.MDP.maxIterations
+  val maxUnchangedIterations = Configuration.MDP.maxUnchangedIterations
 
   // This is the KB graph which will be grown iteratively. This is an abstract field and must be implemented on the
   // concrete class inheriting the trait

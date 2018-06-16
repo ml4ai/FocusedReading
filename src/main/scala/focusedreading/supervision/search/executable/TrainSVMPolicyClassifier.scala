@@ -3,6 +3,7 @@ package focusedreading.supervision.search.executable
 import collection.JavaConversions._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import focusedreading.Configuration
 import focusedreading.reinforcement_learning.actions._
 import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.supervision.search.{LibSVMClassifier, LinearKernel}
@@ -17,15 +18,10 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]
 
   // Load the configuration parameters
-  val config = ConfigFactory.load()
-
-  val trainingConfig = config.getConfig("training")
-  val supervisionConfig = config.getConfig("expertOracle")
-
-  val trainingSolutionsPath = supervisionConfig.getString("trainingSolutionsPath")
-  val testingSolutionsPath = supervisionConfig.getString("solutionsPath")
-  val classifierPath = supervisionConfig.getString("classifierPath")
-  val toBeIncluded = supervisionConfig.getStringList("includedFeatures").toSet
+  val trainingSolutionsPath = Configuration.ExpertOracle.trainingSolutionsPath
+  val testingSolutionsPath = Configuration.ExpertOracle.testingSolutionsPath
+  val classifierPath = Configuration.ExpertOracle.classifierPath
+  val toBeIncluded = Configuration.ExpertOracle.activeFeatures.toSet
 
   // Desearalize the training data
   logger.info("Loading the training data")
@@ -74,7 +70,7 @@ object TrainSVMPolicyClassifier extends App with LazyLogging {
   val weights = Seq(ExploitEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
     ExploreEndpoints_ExploreManyQuery.asInstanceOf[FocusedReadingAction],
     ExploitEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction],
-    ExploreEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction]).zip(supervisionConfig.getDoubleList("classWeights")).map{case(k, v) => k -> v.toDouble}.toMap
+    ExploreEndpoints_ExploitQuery.asInstanceOf[FocusedReadingAction]).zip(Configuration.ExpertOracle.classWeights).map{case(k, v) => k -> v.toDouble}.toMap
   classifier.train(dataset, indices, Some(weights))
 
   // Test it on the held out data

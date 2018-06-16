@@ -1,12 +1,10 @@
 package focusedreading.supervision.search
 
 import com.typesafe.config.ConfigFactory
-import focusedreading.Participant
+import focusedreading.{Configuration, Participant}
 import focusedreading.ir.LuceneQueries
 
 object PairVerifyer extends App {
-
-  val config = ConfigFactory.load()
 
   val pairs = io.Source.fromFile("pairs_training").getLines().map{
     s =>
@@ -16,7 +14,7 @@ object PairVerifyer extends App {
 
   val participants = pairs.flatMap{case (a, b) => Seq(a, b)}.toSet
 
-  val indexPath = config.getConfig("lucene").getString("annotationsIndex")
+  val indexPath = Configuration.Lucene.indexPath
   val querier = new LuceneQueries(indexPath)
 
   val hasSynonyms = participants.map(p => p -> !querier.resolveParticipant(p).isEmpty).toMap

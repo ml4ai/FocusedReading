@@ -11,7 +11,7 @@ import focusedreading.reinforcement_learning.states.FocusedReadingState
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.search.{FRSearchState, Node, SearchResult, UniformCostSearch}
 import focusedreading.supervision.{CreateExpertOracle, ReferencePathSegment}
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import org.clulab.utils.Serializer
 
 import scala.collection.mutable
@@ -19,9 +19,8 @@ import scala.io.Source
 
 object DoSearch extends App{
 
-  val config = ConfigFactory.load()
-  private implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
-  private implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+  private implicit val indexPath = LuceneIndexDir(Configuration.Lucene.indexPath)
+  private implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
 
   def persistResults(results:Map[(String, String), Option[Seq[SearchResult]]], path:String){
@@ -36,8 +35,7 @@ object DoSearch extends App{
 
   // Interning strings
   println("Interning strings ...")
-  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
-  val da = new SQLiteQueries(sqlitePath)
+  val da = new SQLiteQueries(Configuration.SQLite.dbPath)
 
   println("Interning PMCIDs...")
   val allPMCIDs = da.getAllPMCIDs
@@ -60,14 +58,12 @@ object DoSearch extends App{
   }
 
   // To avoid a race condition further down
-  LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
+  LuceneQueries.getSearcher(Configuration.Lucene.indexPath)
 
-
-  private val configuration = ConfigFactory.load()
-  val maxIterations = configuration.getConfig("MDP").getInt("maxIterations")
-  val stepSize = configuration.getConfig("MDP").getConfig("paperAmounts").getDouble("many")
-  val trainingFile = configuration.getConfig("expertOracle").getString("inputFile")
-  val fragmentsFile = configuration.getConfig("expertOracle").getString("goldenDataPath")
+  val maxIterations = Configuration.MDP.maxIterations
+  val stepSize = Configuration.MDP.PaperAmounts.many
+  val trainingFile = Configuration.ExpertOracle.inputPath
+  val fragmentsFile = Configuration.ExpertOracle.goldenDataPath
   //val maxThreads = config.getConfig("search").getInt("maxThreads")
 
   //val threadSupport = new ForkJoinTaskSupport()

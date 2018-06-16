@@ -8,7 +8,7 @@ import focusedreading.agents._
 import focusedreading.reinforcement_learning.actions.FocusedReadingActionValues
 import focusedreading.sqlite.SQLiteQueries
 import focusedreading.tracing.AgentRunTrace
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import org.sarsamora.policies._
 import com.typesafe.config.ConfigFactory
 import focusedreading.policies.ClassifierPolicy
@@ -22,12 +22,11 @@ import scala.collection.mutable
 object Testing extends App with LazyLogging{
 
   // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
-  val config = ConfigFactory.load()
-  val testingConfig = config.getConfig("testing")
-  val outputConfig = testingConfig.getConfig("output")
-  val supervisionConfig = config.getConfig("expertOracle")
-  implicit val indexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
-  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+  val testingConfig = Configuration.Testing
+  val outputConfig = testingConfig.Output
+  val supervisionConfig = Configuration.ExpertOracle
+  implicit val indexDir = LuceneIndexDir(Configuration.Lucene.indexPath)
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
   def getParticipants(path:List[Connection]):List[String] = {
     path match {
@@ -39,7 +38,7 @@ object Testing extends App with LazyLogging{
 
 
 
-  val inputPath = testingConfig.getString("inputFile")
+  val inputPath = testingConfig.inputPath
 
   val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
     .map{
@@ -119,7 +118,7 @@ object Testing extends App with LazyLogging{
 
   val bootstrap = new mutable.HashMap[Int, (Boolean, Int, String)]() // (Success, # queries, papers)
 
-  val writer = new OutputStreamWriter(new FileOutputStream(outputConfig.getString("evidence")))
+  val writer = new OutputStreamWriter(new FileOutputStream(outputConfig.evidencePath))
 
   var referenceRetrieved = 0
 
@@ -135,19 +134,19 @@ object Testing extends App with LazyLogging{
     logger.info(s"About to start a focused search $ix of ${dataSet.size}")
 
     //val agent = new LuceneReachSearchAgent(participantA, participantB)
-    val policyPath = testingConfig.getString("policyFile")
+    val policyPath = testingConfig.policyPath
     val policy = Policy.loadPolicy(policyPath, valueLoader).asInstanceOf[EpGreedyPolicy].makeGreedy
     //val policy = new ClassifierPolicy(supervisionConfig.getString("classifierPath"))
 
 
     // Instantiate the normalization parameters, if necessary
-    val normalizationConfig = testingConfig.getConfig("normalization")
+    val normalizationConfig = testingConfig.Normalization
 
-    val normalizationParameters = normalizationConfig.getBoolean("enabled") match {
+    val normalizationParameters = normalizationConfig.enabled match {
       case true => {
-        val lower = normalizationConfig.getDouble("lower")
-        val upper = normalizationConfig.getDouble("upper")
-        val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+        val lower = normalizationConfig.lower
+        val upper = normalizationConfig.upper
+        val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.rangesPath)
 
         val parameters = NormalizationParameters(lower, upper, ranges)
 
@@ -341,7 +340,7 @@ object Testing extends App with LazyLogging{
   logger.info(s"Same outcome: $same")
   logger.info(s"Different outcome: $different")
 
-  val osw = new BufferedWriter(new FileWriter(outputConfig.getString("bootstrap")))
+  val osw = new BufferedWriter(new FileWriter(outputConfig.bootstrapPath))
 
   bootstrapLines foreach osw.write
 
@@ -351,7 +350,7 @@ object Testing extends App with LazyLogging{
 
   // Write down the annotations
   // First, translate the interaction pairs to their PK in the SQLite DB
-  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val sqlitePath = Configuration.SQLite.dbPath
   val daIE = new SQLiteQueries(sqlitePath)
   val mappedInteractions = interactionsToAnnotate.map{
     case(key, value) =>
@@ -360,7 +359,7 @@ object Testing extends App with LazyLogging{
   }
 
   // Generate the lines and write them down
-  val annotationSw = new BufferedWriter(new FileWriter(outputConfig.getString("annotations")))
+  val annotationSw = new BufferedWriter(new FileWriter(outputConfig.annotationsPath))
   mappedInteractions foreach {
     case (key, value) =>
       val cols = value.mkString(",")

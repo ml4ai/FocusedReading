@@ -1,7 +1,6 @@
 package focusedreading.agents
 
-import com.typesafe.config.ConfigFactory
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.QueryStrategy.{Conjunction, Disjunction}
 import focusedreading.ir.{Query, QueryStrategy, RedisIRStrategy, SQLIRStrategy}
@@ -13,7 +12,6 @@ import org.sarsamora.actions.Action
 import org.sarsamora.policies.Policy
 import org.sarsamora.states.State
 
-import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 
@@ -86,9 +84,9 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   this.introductions += participantA -> 0
   this.introductions += participantB -> 0
 
-  private val useRewardShaping = PolicySearchAgent.configuration.getConfig("MDP").getBoolean("rewardShaping")
-  private val fewPapers = PolicySearchAgent.configuration.getConfig("MDP").getConfig("paperAmounts").getInt("few")
-  private val manyPapers = PolicySearchAgent.configuration.getConfig("MDP").getConfig("paperAmounts").getInt("many")
+  private val useRewardShaping = Configuration.MDP.useRewardShaping
+  private val fewPapers = Configuration.MDP.PaperAmounts.few
+  private val manyPapers = Configuration.MDP.PaperAmounts.many
 
   var shapingCount:Int = 0
   var rewardEvaluated:Int = 0
@@ -308,7 +306,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     }
 
     // Reward shaping function (potential difference)
-    val rewardShapigCoefficient = mdpConfig.getDouble("rewardShapingCoefficient")
+    val rewardShapigCoefficient = Configuration.MDP.rewardShapingCoefficient
     val shaping = rewardShapigCoefficient*currentPotential - prevPotential
 
 
@@ -461,14 +459,12 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   * Companion object.
   */
 object PolicySearchAgent {
-  private val configuration = ConfigFactory.load()
   // All the possible actions
   val usedActions = Seq(ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery, ExploitEndpoints_ExploitQuery,
     ExploreEndpoints_ExploreManyQuery, ExploreEndpoints_ExploreFewQuery, ExploreEndpoints_ExploitQuery)
 
-  //val config = ConfigFactory.load()
   // TODO: make this code respect the configuration choice
-  private val elements = configuration.getConfig("MDP").getConfig("actions").getStringList("active").toSet
+  private val elements = Configuration.MDP.activeActions.toSet
 
   def getActiveActions: Seq[FocusedReadingAction] = usedActions
 }

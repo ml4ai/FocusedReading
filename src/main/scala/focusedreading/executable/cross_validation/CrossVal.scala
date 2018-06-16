@@ -4,6 +4,7 @@ import java.io.{File, FileOutputStream, OutputStreamWriter}
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import focusedreading.Configuration
 import focusedreading.agents.{LuceneIndexDir, SQLiteFile}
 
 import scala.collection.mutable
@@ -13,9 +14,8 @@ import scala.collection.mutable
   */
 object CrossVal extends App with LazyLogging {
 
-  val config = ConfigFactory.load()
-  val indexPath = config.getConfig("lucene").getString("annotationsIndex")
-  val sqlitePath = config.getConfig("informationExtraction").getString("sqlitePath")
+  val indexPath = Configuration.Lucene.indexPath
+  val sqlitePath = Configuration.SQLite.dbPath
 
   val dirPath = args(0)
 

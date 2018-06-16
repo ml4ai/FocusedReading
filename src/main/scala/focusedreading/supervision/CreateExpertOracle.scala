@@ -4,6 +4,7 @@ import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutp
 import java.sql.DriverManager
 
 import com.typesafe.config.ConfigFactory
+import focusedreading.Configuration
 
 import scala.collection.mutable
 import scala.io.Source
@@ -17,9 +18,7 @@ import scalax.collection.edge.Implicits._
 
 object CreateExpertOracle extends App{
 
-  val conf = ConfigFactory.load()
-
-  val dbPath = conf.getConfig("informationExtraction").getString("sqlitePath")
+  val dbPath = Configuration.SQLite.dbPath
 
   println(s"Finding paths for training data exper from: $dbPath")
 
@@ -122,7 +121,7 @@ object CreateExpertOracle extends App{
     }.seq.toMap
 
 
-    val filePath = conf.getConfig("expertOracle").getString("goldenDataPath")
+    val filePath = Configuration.ExpertOracle.goldenDataPath
     serialize(shortestPaths, filePath)
 
     val endingTime = System.nanoTime()
@@ -161,7 +160,7 @@ object CreateExpertOracle extends App{
     }.seq.toMap
 
 
-    val filePath = conf.getConfig("expertOracle").getString("negativeDataPath")
+    val filePath = Configuration.ExpertOracle.negativeDataPath
     serialize(shortestPaths, filePath)
 
     val endingTime = System.nanoTime()
@@ -179,12 +178,12 @@ object CreateExpertOracle extends App{
 
 
   def buildDatasets():Unit = {
-    val filePath = conf.getConfig("expertOracle").getString("inputFile")
+    val filePath = Configuration.ExpertOracle.inputPath
 
     val pathways = io.Source.fromFile(filePath).getLines.toList.map(_.split("\t"))
 
 
-    val goldenDataPath = conf.getConfig("expertOracle").getString("goldenDataPath")
+    val goldenDataPath = Configuration.ExpertOracle.goldenDataPath
     val gt = findGroundTruth(pathways)
     //val gt = deserialize(goldenDataPath)
     findNegativeExamples(pathways, gt)

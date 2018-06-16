@@ -1,22 +1,16 @@
 package focusedreading.executable
 
-import java.io.File
-
-import collection.mutable
 import breeze.linalg.{DenseVector, linspace}
 import breeze.plot.{Figure, plot}
-import org.apache.commons.io.FileUtils
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
-import focusedreading.Participant
 import focusedreading.reinforcement_learning.environment.SimplePathEnvironment
 import focusedreading.reinforcement_learning.states.{FocusedReadingState, NormalizationParameters}
+import focusedreading.{Configuration, Participant}
 import org.sarsamora.actions.Action
-import org.sarsamora.environment.Environment
 import org.sarsamora.policies.{EpGreedyPolicy, Policy}
+import org.sarsamora.policy_iteration.td.QLearning
 import org.sarsamora.policy_iteration.td.value_functions.LinearApproximationActionValues
-import org.sarsamora.policy_iteration.td.{QLearning, SARSA}
 import org.sarsamora.policy_iteration.{EpisodeObservation, EpisodeObserver, IterationObservation}
 import org.sarsamora.{Decays, scalaRand}
 
@@ -28,14 +22,9 @@ import org.sarsamora.{Decays, scalaRand}
 // TODO: Clean up this class
 object Training extends App with LazyLogging {
 
-  val config = ConfigFactory.load()
-
-  val trainingConfig = config.getConfig("training")
-  val mdpConfig = config.getConfig("MDP")
-
-  val inputPath = trainingConfig.getString("inputFile")
-  implicit val indexPath = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
-  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+  val inputPath = Configuration.Training.inputPath
+  implicit val indexPath = LuceneIndexDir(Configuration.Lucene.indexPath)
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
 
   val trainingData = io.Source.fromFile(inputPath).getLines
@@ -54,13 +43,11 @@ object Training extends App with LazyLogging {
 
 
   // Instantiate the normalization parameters, if necessary
-  val normalizationConfig = trainingConfig.getConfig("normalization")
+  val normalizationParameters = if(Configuration.Training.Normalization.enabled){
 
-  val normalizationParameters = if(normalizationConfig.getBoolean("enabled")){
-
-      val lower = normalizationConfig.getDouble("lower")
-      val upper = normalizationConfig.getDouble("upper")
-      val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+      val lower = Configuration.Training.Normalization.lower
+      val upper = Configuration.Training.Normalization.upper
+      val ranges = NormalizationParameters.readFeatureRanges(Configuration.Training.Normalization.rangesPath)
 
       val parameters = NormalizationParameters(lower, upper, ranges)
 
@@ -131,11 +118,11 @@ object Training extends App with LazyLogging {
     f.saveas(s"plot_$title.png")
   }
 
-  val epochs = trainingConfig.getInt("epochs")
-  val numEpisodes = trainingConfig.getInt("maxEpisodes") //pairs.size * epochs
-  val burnInEpisodes = trainingConfig.getInt("burnInEpisodes")
-  val learningRate = trainingConfig.getDouble("learningRate")
-  val decay = trainingConfig.getDouble("decayParameter")
+  val epochs = Configuration.Training.epochs
+  val numEpisodes = Configuration.Training.maxEpisodes
+  val burnInEpisodes = Configuration.Training.burnInEpisodes
+  val learningRate = Configuration.Training.learningRate
+  val decay = Configuration.Training.decayParameter
   val lambda = 0.9d // TODO: parameterize this
 
   // TODO: Delete me
@@ -148,8 +135,8 @@ object Training extends App with LazyLogging {
   val qFunction = new LinearApproximationActionValues(activeActions, FocusedReadingState.featureNames, true)
 
   // Decaying epsilon
-  val epsilon = trainingConfig.getConfig("epsilon").getDouble("initial")
-  val lowerBound = trainingConfig.getConfig("epsilon").getDouble("lowerBound")
+  val epsilon = Configuration.Training.Epsilon.initial
+  val lowerBound = Configuration.Training.Epsilon.lowerBound
 //  val epsilonDecrease = (epsilon-0.01)/(numEpisodes/2.0)
 //  val eps = (0 to (numEpisodes/2)).toStream.map(i => epsilon-(i*epsilonDecrease)).iterator ++ Stream.continually(0.01)
   val eps = Decays.exponentialDecay(epsilon, lowerBound, trainingData.size*(epochs-2), trainingData.size).iterator
@@ -164,14 +151,14 @@ object Training extends App with LazyLogging {
   // Print the number of times the reward was shaped
 
   // Store the policy somewhere
-  val policyPath = trainingConfig.getString("policyFile")
+  val policyPath = Configuration.Training.policyPath
   learntPolicy.save(policyPath)
 
   // Compute the features' observed  ranges
   val featureRanges = FocusedReadingState.observedFeatureRanges()
 
   // Store those ranges
-  val rangesPath = trainingConfig.getString("rangesFile")
+  val rangesPath = Configuration.Training.outputRangesFile
   NormalizationParameters.serializeFeatureRanges(featureRanges, rangesPath)
 
 

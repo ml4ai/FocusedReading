@@ -7,14 +7,13 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.FileUtils
 import focusedreading.agents._
 import focusedreading.tracing.AgentRunTrace
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-import com.typesafe.config.ConfigFactory
 
 /**
   * Created by enrique on 12/03/17.
@@ -23,11 +22,10 @@ object Baseline extends App with LazyLogging{
 
     // Read the configuration parameters
     // to set a custom conf file add -Dconfig.file=/path/to/conf/file to the cmd line for sbt
-    val config = ConfigFactory.load()
 
     // Lucene index dir
-    implicit val indexPath: LuceneIndexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
-    implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
+    implicit val indexPath: LuceneIndexDir = LuceneIndexDir(Configuration.Lucene.indexPath)
+    implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
 
     def getParticipants(path:List[Connection]):List[String] = {
@@ -61,7 +59,7 @@ object Baseline extends App with LazyLogging{
     }
 
     // The first argument is the input file
-    val inputPath = config.getConfig("baseline").getString("inputFile")
+    val inputPath = Configuration.Baseline.inputPath
     val dataSet:Iterable[Seq[String]] = io.Source.fromFile(inputPath).getLines
       .map{
         s =>

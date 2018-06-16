@@ -14,7 +14,7 @@ import focusedreading.sqlite.SQLiteQueries
 import focusedreading.supervision.ReferencePathSegment
 import focusedreading.supervision.search.executable.{DoSearch, SVMPolicyClassifier}
 import focusedreading.supervision.search._
-import focusedreading.{Connection, Participant}
+import focusedreading.{Configuration, Connection, Participant}
 import org.clulab.learning.Datasets.mkTrainIndices
 import org.clulab.learning.RVFDataset
 import org.sarsamora.policies.Policy
@@ -27,14 +27,12 @@ import scala.collection.mutable
 class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochSize:Int, alphas:Iterator[Double]) extends LazyLogging{
 
   // Load the configuration parameters
-  private val config = ConfigFactory.load()
-  private val imitationConfig = config.getConfig("imitation")
-  private val toBeIncluded = imitationConfig.getStringList("includedFeatures").toSet
-  private val maxIterations = config.getConfig("MDP").getInt("maxIterations")
+  private val toBeIncluded = Configuration.Imitation.activeFeatures.toSet
+  private val maxIterations = Configuration.MDP.maxIterations
 
   // Interning strings
   println("Interning strings ...")
-  val sqlitePath: String = config.getConfig("informationExtraction").getString("sqlitePath")
+  val sqlitePath: String = Configuration.SQLite.dbPath
   val da = new SQLiteQueries(sqlitePath)
 
   println("Interning PMCIDs...")
@@ -58,7 +56,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment], epochs:Int, epochS
   }
 
   // To avoid a race condition further down
-  LuceneQueries.getSearcher(config.getConfig("lucene").getString("annotationsIndex"))
+  LuceneQueries.getSearcher(Configuration.Lucene.indexPath)
 
   // (state, predicted action, real action)
   private val experience = new mutable.ListBuffer[(FocusedReadingState, FocusedReadingAction, FocusedReadingAction)]

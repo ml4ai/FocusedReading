@@ -2,7 +2,7 @@ package focusedreading.executable
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import focusedreading.Participant
+import focusedreading.{Configuration, Participant}
 import focusedreading.agents.{LuceneIndexDir, PolicySearchAgent, SQLiteFile}
 import focusedreading.imitation_learning.DAgger
 import focusedreading.reinforcement_learning.actions.FocusedReadingAction
@@ -24,16 +24,11 @@ object TrainingImitation extends App with LazyLogging {
 
   type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]
 
-  val config = ConfigFactory.load()
+  implicit val indexPath: LuceneIndexDir = LuceneIndexDir(Configuration.Lucene.indexPath)
+  implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
-  implicit val indexPath: LuceneIndexDir = LuceneIndexDir(config.getConfig("lucene").getString("annotationsIndex"))
-  implicit val sqliteFile: SQLiteFile = SQLiteFile(config.getConfig("informationExtraction").getString("sqlitePath"))
 
-  val trainingConfig = config.getConfig("imitation")
-  val mdpConfig = config.getConfig("MDP")
-  val supervisionConfig = config.getConfig("expertOracle")
-
-  val inputPath = trainingConfig.getString("inputFile")
+  val inputPath = Configuration.Imitation.inputPath
 
   val trainingPaths = Source.fromFile(inputPath).getLines().toList.map(_.split("\t"))
 
@@ -44,13 +39,12 @@ object TrainingImitation extends App with LazyLogging {
   val dataSet:Iterator[Array[String]] = Iterator.continually(randomizedData).flatten
 
   // Instantiate the normalization parameters, if necessary
-  val normalizationConfig = trainingConfig.getConfig("normalization")
 
-  val normalizationParameters = if(normalizationConfig.getBoolean("enabled")){
+  val normalizationParameters = if(Configuration.Imitation.Normalization.enabled){
 
-      val lower = normalizationConfig.getDouble("lower")
-      val upper = normalizationConfig.getDouble("upper")
-      val ranges = NormalizationParameters.readFeatureRanges(normalizationConfig.getString("rangesFile"))
+      val lower = Configuration.Imitation.Normalization.lower
+      val upper = Configuration.Imitation.Normalization.upper
+      val ranges = NormalizationParameters.readFeatureRanges(Configuration.Imitation.Normalization.rangesPath)
 
       val parameters = NormalizationParameters(lower, upper, ranges)
 
@@ -86,9 +80,9 @@ object TrainingImitation extends App with LazyLogging {
   }
 
 
-  val epochs = trainingConfig.getInt("epochs")
-  val numEpisodes = trainingConfig.getInt("maxEpisodes") //pairs.size * epochs
-  val learningRate = trainingConfig.getDouble("initialLearningRate")
+  val epochs = Configuration.Imitation.epochs
+  val numEpisodes = Configuration.Imitation.maxEpisodes
+  val learningRate = Configuration.Imitation.initialLearningRate
 
   val alphas = Decays.exponentialDecay(learningRate, 0.1, epochs, 0).iterator
 
@@ -103,14 +97,14 @@ object TrainingImitation extends App with LazyLogging {
   // Print the number of times the reward was shaped
 
   // Store the policy somewhere
-  val policyPath = trainingConfig.getString("policyFile")
+  val policyPath = Configuration.Imitation.policyPath
   learntPolicy.save(policyPath)
 
   // Compute the features' observed  ranges
   val featureRanges = FocusedReadingState.observedFeatureRanges()
 
   // Store those ranges
-  val rangesPath = trainingConfig.getString("rangesFile")
+  val rangesPath = Configuration.Imitation.rangesOutputPath
   NormalizationParameters.serializeFeatureRanges(featureRanges, rangesPath)
 
 }
