@@ -112,7 +112,7 @@ object SearchTreeExplorer extends App with LazyLogging {
 
           // TODO check implicits here: the state implicit conversion doesn't work in the argument of walker
           // and the action conversion doesn't work as parameter of the sequence. In the book should be the answer
-          val newState: FocusedReadingState = a.observeState
+          val newState: FocusedReadingState = newAgent.observeState
           walker(newState, newAgent, newAgent.possibleActions.map {
             _.asInstanceOf[FocusedReadingAction]
           })
