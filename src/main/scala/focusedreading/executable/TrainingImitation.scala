@@ -23,8 +23,6 @@ import scala.io.Source
 
 object TrainingImitation extends App with LazyLogging {
 
-  type SolutionsMap = Map[(String, String), Option[Seq[(FocusedReadingState, FocusedReadingAction, Double)]]]
-
   implicit val indexPath: LuceneIndexDir = LuceneIndexDir(Configuration.Lucene.indexPath)
   implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 

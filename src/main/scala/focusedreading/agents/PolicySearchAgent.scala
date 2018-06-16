@@ -439,6 +439,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
   * Companion object.
   */
 object PolicySearchAgent {
+  // TODO Factor out these members into another object. The agent is not the right place for them
   private val elements = Configuration.MDP.activeActions.toSet map FocusedReadingAction.apply
   lazy val activeActions: Seq[FocusedReadingAction] = FocusedReadingAction.allActions filter elements.contains
 }

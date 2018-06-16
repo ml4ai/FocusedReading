@@ -79,8 +79,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment],
       }
     }
 
-    val agent = environment.agent
-    val state:FocusedReadingState = agent.observeState
+    val state:FocusedReadingState = environment.observeState
 
     val reference:Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map{
       r =>
@@ -95,7 +94,7 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment],
       case None =>
         logger.info(s"Cache Miss")
         // Doesn't contain it, hence running UCS to find it
-        val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
+        val searcher = new UniformCostSearch(FRSearchState(environment.agent, reference, 0, maxIterations))
         searcher.solve() match {
           case Some(solution) =>
             val sequence: Seq[SearchResult] = searcher.actionSequence(solution)
@@ -104,10 +103,10 @@ class DAgger(episodeFabric: => Option[SimplePathEnvironment],
             cacheSequence(state, sequence)
             choice
           case None =>
-            val choice = agent.possibleActions.randomElement
-            val sequence = Seq(SearchResult(state, choice, agent paperAmountFor choice, None, None))
+            val choice = environment.possibleActions.randomElement
+            val sequence = Seq(SearchResult(state, choice, environment.agent paperAmountFor choice, None, None))
             optimalSequencesCache.cache(state, sequence)
-            ExploreEndpoints_ExploitQuery
+            choice
         }
     }
   }

@@ -21,6 +21,7 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 
 
   // TODO: Clarify this awkward composition: An agent operates within an environment. Is this valid within my abstraction of FR?
+  // I think the search model should be factored out to the environment and make the agent stateless and the environment stateful
   val agent = new PolicySearchAgent(participantA, participantB, None, Some(referencePath), normalizationParameters)
 
   override def possibleActions(): Seq[Action] = agent.possibleActions
@@ -31,8 +32,8 @@ case class SimplePathEnvironment(participantA:Participant, participantB:Particip
 
 
   override def finishedEpisode:Boolean ={
+    // TODO: Fix the model parameter and remove the mutate parameter
     val ret = agent.hasFinished(participantA, participantB, agent.model, false)
-
 
     ret
   }

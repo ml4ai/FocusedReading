@@ -28,6 +28,7 @@ object FocusedReadingAction {
   }
 
   // All the possible actions
+  // TODO: make a way to handle this as an enumeration
   val allActions = Seq(
     ExploitEndpoints_ExploreManyQuery,
     ExploitEndpoints_ExploreFewQuery,
