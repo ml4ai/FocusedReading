@@ -36,7 +36,7 @@ object ReachKBUtils {
 
   /** Return a resource path string for the given filename in the knowledge bases directory. */
   def makePathInKBDir (filename:String): String = {
-    return KBDirResourcePath + File.separator + filename
+    return KBDirResourcePath + "/" + filename
   }
 
   /** Return a file for the given filename in the current user working directory. */
