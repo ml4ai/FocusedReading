@@ -232,88 +232,6 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     }
   }
 
-
-  private def executePolicyQueryStage(action:Action, persist:Boolean):Double = {
-
-    // Compute the reward shaping potential in the current state
-    val prevPotential = if (useRewardShaping) {
-      shapingPotential
-    } else {
-      0.0
-    }
-
-    // Fetch the chosen participants (endpoints)
-    val (a, b) = queryLog.head
-
-    // Build a query object based on the action
-    val query = queryActionToStrategy(action, a, b)
-
-    val paperIds = this.informationRetrieval(query)
-
-    this.papersRead ++= paperIds map (_._1.intern())
-
-    val findings = this.informationExtraction(paperIds map (p => p._1.intern()))
-
-    // Count the introductions
-    for(f <- findings){
-      val x = f.controller
-      val y = f.controlled
-
-      if(persist){
-        if(!introductions.contains(x))
-          introductions += (x -> iterationNum)
-
-        if(!introductions.contains(y))
-          introductions += (y -> iterationNum)
-      }
-
-    }
-
-    // Add the stuff to the model
-    reconcile(findings)
-
-    // Increment the iteration count
-    iterationNum += 1
-
-
-
-    // Compute the reward shaping, if on
-    val currentPotential = if (useRewardShaping) {
-      shapingPotential
-    } else {
-      0.0
-    }
-
-    // Reward shaping function (potential difference)
-    val rewardShapigCoefficient = Configuration.MDP.rewardShapingCoefficient
-    val shaping = rewardShapigCoefficient*currentPotential - prevPotential
-
-
-    // TODO: Delete me
-    if(shaping > 0) {
-      shapingCount += 1
-    }
-
-    rewardEvaluated += 1
-    /////////////////
-    // Return the observed reward
-    if(!this.hasFinished(participantA, participantB, model, mutate = true)){
-      // If this episode hasn't finished
-      // TODO: Parameterize the reward structure
-      -0.05 + shaping
-    }
-    else{
-      // If finished successfully
-      val uniquePapers = this.papersRead.toSet.size
-      successStopCondition(participantA, participantB, model) match{
-        case Some(p) =>
-          10.0 + shaping
-        case None =>
-          -1.0 + shaping
-      }
-    }
-  }
-
   // This is an optimization to avoid running shortest paths every time
   // Refer to https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf
   // For the theoretical justification of this reward shaping set up
@@ -394,10 +312,11 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
     }
   }
 
-  private def executePolicyEndpointsStage(action:Action, persist:Boolean):Double = {
+
+  // Public methods
+  def executePolicy(action:Action, persist:Boolean = true):Double =  {
     if(persist)
       iterationNum += 1
-
 
     val selectedChooser = action match {
       case ac if Seq(ExploitEndpoints_ExploitQuery, ExploitEndpoints_ExploreManyQuery, ExploitEndpoints_ExploreFewQuery).contains(ac) => exploitChooser
@@ -405,7 +324,7 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       case _ => throw new RuntimeException("Invalid action for the ENDPOINTS stage")
     }
 
-    val (a, b) = selectedChooser.choseEndPoints(participantA, participantB, triedPairs.toSet, model)
+    val (a, b) = selectedChooser.choseEndPoints(participantA, participantB, triedPairs, model)
     ////////
 
 
@@ -414,17 +333,79 @@ class PolicySearchAgent(val participantA:Participant, val participantB:Participa
       queryLog = (a, b)::queryLog
     }
 
-    0.0 // This reward is zero because this is an intermediate step of the FR loop
-    // The actual signal comes after the query stage whether it found a path
-  }
+
+    // Compute the reward shaping potential in the current state
+    val prevPotential = if (useRewardShaping) {
+      shapingPotential
+    } else {
+      0.0
+    }
 
 
-  // Public methods
-  def executePolicy(action:Action, persist:Boolean = true):Double =  {
-    executePolicyEndpointsStage(action, persist)
-    /*case FocusedReadingStage.Query => */
-    executePolicyQueryStage(action, persist)
-    /*case FocusedReadingStage.EndPoints => */
+    // Build a query object based on the action
+    val query = queryActionToStrategy(action, a, b)
+
+    val paperIds = this.informationRetrieval(query)
+
+    this.papersRead ++= paperIds map (_._1.intern())
+
+    val findings = this.informationExtraction(paperIds map (p => p._1.intern()))
+
+    // Count the introductions
+    for(f <- findings){
+      val x = f.controller
+      val y = f.controlled
+
+      if(persist){
+        if(!introductions.contains(x))
+          introductions += (x -> iterationNum)
+
+        if(!introductions.contains(y))
+          introductions += (y -> iterationNum)
+      }
+
+    }
+
+    // Add the stuff to the model
+    reconcile(findings)
+
+
+
+    // Compute the reward shaping, if on
+    val currentPotential = if (useRewardShaping) {
+      shapingPotential
+    } else {
+      0.0
+    }
+
+    // Reward shaping function (potential difference)
+    val rewardShapigCoefficient = Configuration.MDP.rewardShapingCoefficient
+    val shaping = rewardShapigCoefficient*currentPotential - prevPotential
+
+
+    // TODO: Delete me
+    if(shaping > 0) {
+      shapingCount += 1
+    }
+
+    rewardEvaluated += 1
+    /////////////////
+    // Return the observed reward
+    if(!this.hasFinished(participantA, participantB, model, mutate = true)){
+      // If this episode hasn't finished
+      // TODO: Parameterize the reward structure
+      -0.05 + shaping
+    }
+    else{
+      // If finished successfully
+      val uniquePapers = this.papersRead.toSet.size
+      successStopCondition(participantA, participantB, model) match{
+        case Some(p) =>
+          10.0 + shaping
+        case None =>
+          -1.0 + shaping
+      }
+    }
 
   }
 

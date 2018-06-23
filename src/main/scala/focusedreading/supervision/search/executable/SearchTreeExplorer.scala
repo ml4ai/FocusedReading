@@ -32,7 +32,7 @@ object SearchTreeExplorer extends App with LazyLogging {
   val x = readLines(trainingInputPath) ++ readLines(testingInputPath)
   val dataSet = x.iterator
 
-  println(x.size)
+  //println(x.size)
 
 
 
@@ -85,8 +85,8 @@ object SearchTreeExplorer extends App with LazyLogging {
 
   val optimalSequencesCache:SolutionsCache = new RedisCache()
 
-  def exploreEnvironment(fabric: => Option[SimplePathEnvironment]): Unit = {
-    fabric match {
+  def exploreEnvironment(fabric: () => Option[SimplePathEnvironment]): Unit = {
+    fabric() match {
       case Some(environment) =>
         traverseTree(environment)
         exploreEnvironment(fabric)
