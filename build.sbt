@@ -25,5 +25,5 @@ libraryDependencies ++= Seq(
   //"org.clulab" %% "reach-main" % "1.3.3",
   "org.xerial" % "sqlite-jdbc" % "3.21.0.1",
   "net.debasishg" %% "redisclient" % "3.4",
-  "org.clulab"          %%  "processors-main" % "6.0.6"
+  "org.clulab" %%  "processors-main" % "6.0.6"
 )
