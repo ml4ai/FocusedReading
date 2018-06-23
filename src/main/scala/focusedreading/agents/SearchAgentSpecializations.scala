@@ -2,7 +2,7 @@ package focusedreading.agents
 
 import focusedreading._
 import focusedreading.entities.Participant
-import focusedreading.ie.{REACHIEStrategy, SQLIteIEStrategy}
+import focusedreading.ie.SQLIteIEStrategy
 import focusedreading.ir.queries.QueryStrategy._
 import focusedreading.ir.LuceneIRStrategy
 import focusedreading.ir.queries.Query
@@ -18,29 +18,6 @@ import focusedreading.pc_strategies.MostConnectedParticipantsStrategy
 case class LuceneIndexDir(path:String)
 case class SQLiteFile(path:String)
 
-/**
-  * Uses Lucene and REACH directly to do a FR simple path search
-  * @param participantA Origin of the search
-  * @param participantB Destination of the search
-  */
-class LuceneReachSearchAgent(participantA:Participant, participantB:Participant)(implicit indexPath:LuceneIndexDir) extends SimplePathAgent(participantA, participantB)
-  with MostConnectedParticipantsStrategy
-  with LuceneIRStrategy
-  with REACHIEStrategy {
-
-  val indexDir:String = indexPath.path
-
-  // Graph4Scala model
-  ///*override val */model/*:SearchModel*/ = new GFSModel(participantA, participantB) // Directed graph with the model.
-
-
-  // Follow the cascade query strategy
-  override def choseQuery(source: Participant,
-                          destination: Participant,
-                          model: SearchModel) = Query(Disjunction, 50, source, Some(destination)) //TODO: Fix this to a more elegant way of ignoring the retrieval count
-
-
-}
 
 /**
   * Uses Redis for IR and SQLite for IE to do simple path FR

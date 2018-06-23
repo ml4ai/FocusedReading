@@ -4,7 +4,7 @@ import java.io.{File, FileWriter, PrintWriter}
 import java.nio.file.Paths
 
 import com.typesafe.scalalogging.LazyLogging
-import org.clulab.processors.bionlp.BioNLPProcessor
+//import org.clulab.processors.bionlp.BioNLPProcessor
 import org.clulab.utils.StringUtils
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer
@@ -28,7 +28,7 @@ import scala.collection.mutable.ArrayBuffer
 class NxmlSearcher(val indexDir:String) extends LazyLogging {
   private val reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexDir)))
   private val searcher = new IndexSearcher(reader)
-  private val proc = new BioNLPProcessor(withChunks = false)
+  //private val proc = new BioNLPProcessor(withChunks = false)
 
   def close(): Unit = reader.close()
 
