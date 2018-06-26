@@ -99,19 +99,18 @@ object SearchTreeExplorer extends App with LazyLogging {
   // To avoid a race condition further down
   LuceneQueries.getSearcher(Configuration.Lucene.indexPath)
 
-  val optimalSequencesCache: SolutionsCache = new RedisCache()
-
   def exploreEnvironment(fabric: () => Option[SimplePathEnvironment], num:Int = 1, offset:Int = 0): Unit = {
     fabric() match {
       case Some(environment) =>
+        val optimalSequencesCache: SolutionsCache = new RedisCache()
         println(s"Exploring instance ${offset+num} out of ${dataSet.size}")
-        traverseTree(environment)
+        traverseTree(environment, optimalSequencesCache)
         exploreEnvironment(fabric, num+1, offset)
       case None => ()
     }
   }
 
-  def traverseTree(environment: SimplePathEnvironment): Unit = {
+  def traverseTree(environment: SimplePathEnvironment, cache: SolutionsCache): Unit = {
 
     // TODO: This is duplicated from Dagger.scala. Refactor it
     val reference: Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map {
@@ -140,23 +139,23 @@ object SearchTreeExplorer extends App with LazyLogging {
         }
       }
 
-      cacheOptimalSequence(s, a, reference)
+      cacheOptimalSequence(s, a, reference, cache)
     }
 
     walker(currentState, agent, actions)
   }
 
-  def cacheOptimalSequence(state: FocusedReadingState, agent: PolicySearchAgent, reference: Seq[ReferencePathSegment]): Unit = {
+  def cacheOptimalSequence(state: FocusedReadingState, agent: PolicySearchAgent, reference: Seq[ReferencePathSegment], cache:SolutionsCache): Unit = {
 
     // TODO: This is duplicated from Dagger.scala. Refactor it
     def cacheSequence(state: FocusedReadingState, results: Seq[SearchResult]) {
       if (results.nonEmpty) {
-        optimalSequencesCache.cache(state, results)
+        cache.cache(state, results)
         cacheSequence(results.head.state, results.tail)
       }
     }
 
-    if (!(optimalSequencesCache contains state)) {
+    if (!(cache contains state)) {
       logger.info("Cache Miss!")
       val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
       searcher.solve() match {
@@ -168,7 +167,7 @@ object SearchTreeExplorer extends App with LazyLogging {
         case None =>
           val choice = agent.possibleActions.randomElement
           val sequence = Seq(SearchResult(state, choice, agent paperAmountFor choice, None, None))
-          optimalSequencesCache.cache(state, sequence)
+          cache.cache(state, sequence)
       }
     }
     else
