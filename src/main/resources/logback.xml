@@ -6,7 +6,16 @@
         </layout>
     </appender>
 
-    <root level="info">
-        <appender-ref ref="STDOUT"/>
+    <appender class="ch.qos.logback.core.FileAppender" name="FILE">
+        <file>
+            application.log
+        </file>
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+        </layout>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>

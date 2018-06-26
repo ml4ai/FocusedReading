@@ -85,10 +85,14 @@ object SearchTreeExplorer extends App with LazyLogging {
 
   val optimalSequencesCache:SolutionsCache = new RedisCache()
 
+  var num = 1
+
   def exploreEnvironment(fabric: () => Option[SimplePathEnvironment]): Unit = {
     fabric() match {
       case Some(environment) =>
+        println(s"Exploring instance $num out of ${x.size}")
         traverseTree(environment)
+        num += 1
         exploreEnvironment(fabric)
       case None => ()
     }
