@@ -25,31 +25,47 @@ object SearchTreeExplorer extends App with LazyLogging {
   implicit val indexPath: LuceneIndexDir = LuceneIndexDir(Configuration.Lucene.indexPath)
   implicit val sqliteFile: SQLiteFile = SQLiteFile(Configuration.SQLite.dbPath)
 
-  def readLines(path:String) = Source.fromFile(trainingInputPath).getLines().toList.map(_.split("\t"))
+  def readLines(path: String) = Source.fromFile(trainingInputPath).getLines().toList.map(_.split("\t"))
 
   val trainingInputPath = Configuration.Training.inputPath
   val testingInputPath = Configuration.Testing.inputPath
-  val x = readLines(trainingInputPath) ++ readLines(testingInputPath)
-  val dataSet = x.iterator
+  val dataSet = readLines(trainingInputPath) ++ readLines(testingInputPath)
+  val y = dataSet.iterator
 
-  //println(x.size)
+  def buildFabric(s: Iterable[Array[String]]) = {
+    val y = s.iterator
 
+    () => {
 
+      if (y.hasNext) {
+        val episodeData = y.next
+        val sequence = episodeData
 
-  def imitationLearningFabric() = {
-    if(dataSet.hasNext){
-      val episodeData = dataSet.next
-      val sequence  = episodeData
-
-      Some(SimplePathEnvironment(
-        Participant.get("", sequence.head.intern()),
-        Participant.get("", sequence.last.intern()),
-        sequence map {p => Participant.get("", p.intern)}, None)
-      )
+        Some(SimplePathEnvironment(
+          Participant.get("", sequence.head.intern()),
+          Participant.get("", sequence.last.intern()),
+          sequence map { p => Participant.get("", p.intern) }, None)
+        )
+      }
+      else
+        None
     }
-    else
-      None
   }
+
+  //  def imitationLearningFabric() = {
+  //    if(y.hasNext){
+  //      val episodeData = y.next
+  //      val sequence  = episodeData
+  //
+  //      Some(SimplePathEnvironment(
+  //        Participant.get("", sequence.head.intern()),
+  //        Participant.get("", sequence.last.intern()),
+  //        sequence map {p => Participant.get("", p.intern)}, None)
+  //      )
+  //    }
+  //    else
+  //      None
+  //  }
 
   // Load the configuration parameters
   private val toBeIncluded = Configuration.Imitation.activeFeatures.toSet
@@ -83,39 +99,36 @@ object SearchTreeExplorer extends App with LazyLogging {
   // To avoid a race condition further down
   LuceneQueries.getSearcher(Configuration.Lucene.indexPath)
 
-  val optimalSequencesCache:SolutionsCache = new RedisCache()
+  val optimalSequencesCache: SolutionsCache = new RedisCache()
 
-  var num = 1
-
-  def exploreEnvironment(fabric: () => Option[SimplePathEnvironment]): Unit = {
+  def exploreEnvironment(fabric: () => Option[SimplePathEnvironment], num:Int = 1, offset:Int = 0): Unit = {
     fabric() match {
       case Some(environment) =>
-        println(s"Exploring instance $num out of ${x.size}")
+        println(s"Exploring instance ${offset+num} out of ${dataSet.size}")
         traverseTree(environment)
-        num += 1
-        exploreEnvironment(fabric)
+        exploreEnvironment(fabric, num+1, offset)
       case None => ()
     }
   }
 
-  def traverseTree(environment: SimplePathEnvironment): Unit ={
+  def traverseTree(environment: SimplePathEnvironment): Unit = {
 
     // TODO: This is duplicated from Dagger.scala. Refactor it
-    val reference:Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map{
+    val reference: Seq[ReferencePathSegment] = environment.referencePath.sliding(2).map {
       r =>
         ReferencePathSegment(r.head.id, r(1).id, Seq.empty[String])
     }.toSeq
 
     val currentState: FocusedReadingState = environment.observeState
-    val agent:PolicySearchAgent = environment.agent
+    val agent: PolicySearchAgent = environment.agent
 
     val actions = environment.possibleActions().map(_.asInstanceOf[FocusedReadingAction])
 
-    def walker(s:FocusedReadingState, a:PolicySearchAgent, as:Seq[FocusedReadingAction]): Unit ={
+    def walker(s: FocusedReadingState, a: PolicySearchAgent, as: Seq[FocusedReadingAction]): Unit = {
       logger.info(s"Walking environment $environment at iteration ${a.iterationNum}")
-      if(!a.hasFinished(environment.participantA, environment.participantB, a.model, false)) {
+      if (!a.hasFinished(environment.participantA, environment.participantB, a.model, false)) {
         for (action <- as) {
-          val newAgent = a.clone
+          val newAgent = a.clone()
           newAgent.executePolicy(action)
 
           // TODO check implicits here: the state implicit conversion doesn't work in the argument of walker
@@ -133,17 +146,17 @@ object SearchTreeExplorer extends App with LazyLogging {
     walker(currentState, agent, actions)
   }
 
-  def cacheOptimalSequence(state: FocusedReadingState, agent:PolicySearchAgent, reference:Seq[ReferencePathSegment]): Unit = {
+  def cacheOptimalSequence(state: FocusedReadingState, agent: PolicySearchAgent, reference: Seq[ReferencePathSegment]): Unit = {
 
     // TODO: This is duplicated from Dagger.scala. Refactor it
-    def cacheSequence(state: FocusedReadingState, results: Seq[SearchResult]){
-      if(results.nonEmpty) {
+    def cacheSequence(state: FocusedReadingState, results: Seq[SearchResult]) {
+      if (results.nonEmpty) {
         optimalSequencesCache.cache(state, results)
         cacheSequence(results.head.state, results.tail)
       }
     }
 
-    if(!(optimalSequencesCache contains state)){
+    if (!(optimalSequencesCache contains state)) {
       logger.info("Cache Miss!")
       val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
       searcher.solve() match {
@@ -162,5 +175,8 @@ object SearchTreeExplorer extends App with LazyLogging {
       logger.info("Cache Hit!")
   }
 
-  exploreEnvironment(imitationLearningFabric)
+  for ((segment, ix) <- dataSet.grouped(10).toList.zipWithIndex.par) {
+    val fabric = buildFabric(segment)
+    exploreEnvironment(fabric, ix)
+  }
 }
