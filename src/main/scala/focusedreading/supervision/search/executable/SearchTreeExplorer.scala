@@ -125,20 +125,23 @@ object SearchTreeExplorer extends App with LazyLogging {
 
     def walker(s: FocusedReadingState, a: PolicySearchAgent, as: Seq[FocusedReadingAction]): Unit = {
       logger.info(s"Walking environment $environment at iteration ${a.iterationNum}")
-      if (!a.hasFinished(environment.participantA, environment.participantB, a.model, false)) {
-        for (action <- as) {
-          val newAgent = a.clone()
-          newAgent.executePolicy(action)
+      if(!(cache contains s)) {
 
-          // TODO check implicits here: the state implicit conversion doesn't work in the argument of walker
-          // and the action conversion doesn't work as parameter of the sequence. In the book should be the answer
-          val newState: FocusedReadingState = newAgent.observeState
-          walker(newState, newAgent, newAgent.possibleActions.map {
-            _.asInstanceOf[FocusedReadingAction]
-          })
+        if (!a.hasFinished(environment.participantA, environment.participantB, a.model, false)) {
+          for (action <- as) {
+            val newAgent = a.clone()
+            newAgent.executePolicy(action)
+
+            // TODO check implicits here: the state implicit conversion doesn't work in the argument of walker
+            // and the action conversion doesn't work as parameter of the sequence. In the book should be the answer
+            val newState: FocusedReadingState = newAgent.observeState
+            walker(newState, newAgent, newAgent.possibleActions.map {
+              _.asInstanceOf[FocusedReadingAction]
+            })
+          }
         }
-      }
 
+      }
       cacheOptimalSequence(s, a, reference, cache)
     }
 
@@ -157,7 +160,7 @@ object SearchTreeExplorer extends App with LazyLogging {
 
     if (!(cache contains state)) {
       logger.info("Cache Miss!")
-      val searcher = new UniformCostSearch(FRSearchState(agent, reference, 0, maxIterations))
+      val searcher = new UniformCostSearch(FRSearchState(agent, reference, agent.iterationNum, maxIterations))
       searcher.solve() match {
         case Some(solution) =>
           val sequence: Seq[SearchResult] = searcher.actionSequence(solution)
@@ -174,7 +177,7 @@ object SearchTreeExplorer extends App with LazyLogging {
       logger.info("Cache Hit!")
   }
 
-  for ((segment, ix) <- dataSet.grouped(10).toList.zipWithIndex.par) {
+  for ((segment, ix) <- dataSet.grouped(100).toList.zipWithIndex.par) {
     val fabric = buildFabric(segment)
     exploreEnvironment(fabric, ix)
   }
